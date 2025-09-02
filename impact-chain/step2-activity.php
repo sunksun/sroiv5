@@ -193,7 +193,7 @@ foreach ($activities as $activity) {
                         <li class="breadcrumb-item active">Step 2: กิจกรรม</li>
                     </ol>
                 </nav>
-                <?php if (isset($_GET['add_new_chain']) && $_GET['add_new_chain'] == '1'): ?>
+                <?php if ((isset($_GET['add_new_chain']) && $_GET['add_new_chain'] == '1') || (isset($_GET['new_chain']) && $_GET['new_chain'] == '1')): ?>
                     <h2><i class="fas fa-plus text-success"></i> เพิ่ม Impact Chain ใหม่: <?php echo htmlspecialchars($project['name']); ?></h2>
                     <div class="alert alert-success">
                         <i class="fas fa-info-circle"></i> <strong>เพิ่ม Impact Chain ใหม่</strong> - เลือกกิจกรรมใหม่สำหรับ Impact Chain ถัดไป
@@ -258,6 +258,9 @@ foreach ($activities as $activity) {
                                 <?php if (isset($_GET['add_new_chain'])): ?>
                                     <input type="hidden" name="add_new_chain" value="1">
                                 <?php endif; ?>
+                                <?php if (isset($_GET['new_chain'])): ?>
+                                    <input type="hidden" name="new_chain" value="1">
+                                <?php endif; ?>
 
                                 <!-- คำแนะนำ -->
                                 <div class="alert alert-light border-primary">
@@ -276,7 +279,7 @@ foreach ($activities as $activity) {
                                             <!-- กิจกรรมหลัก (Level 1) -->
                                             <div class="mb-3">
                                                 <div class="card border-info activity-card <?php echo in_array($main_activity['activity_id'], $selected_activity_ids) ? 'selected' : ''; ?>"
-                                                    onclick="selectActivity('<?php echo $main_activity['activity_id']; ?>')">
+                                                    onclick="selectActivity('<?php echo $main_activity['activity_id']; ?>', '<?php echo htmlspecialchars($main_activity['activity_name'], ENT_QUOTES); ?>')">
                                                     <div class="card-body">
                                                         <div class="d-flex align-items-start">
                                                             <input type="radio"
@@ -312,7 +315,7 @@ foreach ($activities as $activity) {
                                                             ?>
                                                                 <div class="col-md-6 mb-2">
                                                                     <div class="card border-secondary activity-card <?php echo in_array($sub_activity['activity_id'], $selected_activity_ids) ? 'selected' : ''; ?>"
-                                                                        onclick="selectActivity('<?php echo $sub_activity['activity_id']; ?>')">
+                                                                        onclick="selectActivity('<?php echo $sub_activity['activity_id']; ?>', '<?php echo htmlspecialchars($sub_activity['activity_name'], ENT_QUOTES); ?>')">
                                                                         <div class="card-body py-2">
                                                                             <div class="d-flex align-items-start">
                                                                                 <input type="radio"
@@ -359,13 +362,39 @@ foreach ($activities as $activity) {
                                     <a href="step1-strategy.php?project_id=<?php echo $project_id; ?>" class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left"></i> ย้อนกลับ
                                     </a>
-                                    <button type="submit" class="btn btn-primary" id="nextBtn" disabled>
-                                        ถัดไป: เลือกผลผลิต <i class="fas fa-arrow-right"></i>
-                                    </button>
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-info-circle"></i> กรุณาเลือกกิจกรรมและใส่รายละเอียดเพื่อดำเนินการต่อ
+                                    </div>
                                 </div>
                             </form>
                         <?php endif; ?>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Activity Details -->
+    <div class="modal fade" id="activityDetailsModal" tabindex="-1" aria-labelledby="activityDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="activityDetailsModalLabel">รายละเอียดกิจกรรม</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>กิจกรรมที่เลือก:</strong></label>
+                        <div id="modalActivityName" class="text-primary"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="activityDetails" class="form-label"><strong>รายละเอียดกิจกรรม:</strong></label>
+                        <textarea class="form-control" id="activityDetails" name="act_details" rows="5" placeholder="กรุณาใส่รายละเอียดของกิจกรรมที่จะดำเนินการในโครงการนี้..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="saveActivityAndProceed()">บันทึกและไปเลือกผลผลิต</button>
                 </div>
             </div>
         </div>
@@ -376,15 +405,63 @@ foreach ($activities as $activity) {
         // กิจกรรมทั้งหมดใน JavaScript
         const activities = <?php echo json_encode($activities); ?>;
 
-        function selectActivity(activityId) {
-            // เลือก radio button
-            document.getElementById('activity_' + activityId).checked = true;
+        let selectedActivityId = null;
+        let selectedActivityName = null;
 
-            // อัปเดต UI
-            updateUI();
+        // Function declarations - global scope
+        function selectActivity(activityId, activityName) {
+            console.log('selectActivity called:', activityId, activityName);
+            selectedActivityId = activityId;
+            selectedActivityName = activityName;
+            
+            // แสดง modal
+            document.getElementById('modalActivityName').textContent = activityName;
+            document.getElementById('activityDetails').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('activityDetailsModal'));
+            modal.show();
+        }
+
+        function saveActivityAndProceed() {
+            console.log('saveActivityAndProceed called');
+            const details = document.getElementById('activityDetails').value.trim();
+            console.log('Details entered:', details);
+            
+            if (details === '') {
+                alert('กรุณาใส่รายละเอียดกิจกรรม');
+                return;
+            }
+            
+            // เลือก radio button
+            document.getElementById('activity_' + selectedActivityId).checked = true;
+            console.log('Radio button checked for activity:', selectedActivityId);
+            
+            // เก็บข้อมูลรายละเอียดใน hidden input
+            let hiddenInput = document.getElementById('selected_activity_details');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'selected_activity_details';
+                hiddenInput.name = 'act_details';
+                document.getElementById('activityForm').appendChild(hiddenInput);
+                console.log('Created new hidden input');
+            }
+            hiddenInput.value = details;
+            console.log('Hidden input value set to:', details);
+            
+            // ปิด modal
+            const modalElement = document.getElementById('activityDetailsModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            document.activeElement.blur();
+            modal.hide();
+            
+            // ส่งฟอร์มทันทีโดยไม่ต้องกดปุ่มถัดไป
+            console.log('Submitting form automatically...');
+            document.getElementById('activityForm').submit();
         }
 
         function updateUI() {
+            console.log('updateUI called');
             const selectedRadio = document.querySelector('input[name="selected_activity"]:checked');
             const nextBtn = document.getElementById('nextBtn');
             const summary = document.getElementById('selectedSummary');
@@ -396,6 +473,7 @@ foreach ($activities as $activity) {
             });
 
             if (selectedRadio) {
+                console.log('Selected radio found:', selectedRadio.value);
                 // เพิ่ม class selected ให้ card ที่เลือก
                 const selectedCard = selectedRadio.closest('.activity-card');
                 selectedCard.classList.add('selected');
@@ -409,7 +487,9 @@ foreach ($activities as $activity) {
 
                 // เปิดใช้งานปุ่มถัดไป
                 nextBtn.disabled = false;
+                console.log('Next button enabled');
             } else {
+                console.log('No radio button selected');
                 // ซ่อน summary และปิดใช้งานปุ่มถัดไป
                 summary.classList.add('d-none');
                 nextBtn.disabled = true;
@@ -432,7 +512,21 @@ foreach ($activities as $activity) {
                 if (!selectedRadio) {
                     e.preventDefault();
                     alert('กรุณาเลือกกิจกรรมก่อนดำเนินการต่อ');
+                    return;
                 }
+                
+                // ตรวจสอบว่ามีรายละเอียดกิจกรรมหรือไม่
+                const hiddenInput = document.getElementById('selected_activity_details');
+                if (!hiddenInput || !hiddenInput.value.trim()) {
+                    e.preventDefault();
+                    alert('กรุณากลับไปเลือกกิจกรรมใหม่และใส่รายละเอียด');
+                    return;
+                }
+                
+                console.log('Form data before submit:', {
+                    selected_activity: selectedRadio.value,
+                    act_details: hiddenInput.value
+                });
             });
         });
     </script>

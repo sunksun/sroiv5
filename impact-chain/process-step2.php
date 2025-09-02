@@ -23,13 +23,15 @@ if ($_SERVER["REQUEST_METHOD"] != "POST") {
 
 $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
 $selected_activity = isset($_POST['selected_activity']) ? trim($_POST['selected_activity']) : '';
+$act_details = isset($_POST['act_details']) ? trim($_POST['act_details']) : '';
 $is_new_chain = isset($_POST['new_chain']) || isset($_GET['new_chain']);
 $add_new_chain = isset($_POST['add_new_chain']) || isset($_GET['add_new_chain']);
 
 // Debug logging
-error_log("process-step2.php: project_id=$project_id, selected_activity=$selected_activity, is_new_chain=" . ($is_new_chain ? 'true' : 'false'));
+error_log("process-step2.php: project_id=$project_id, selected_activity=$selected_activity, act_details=$act_details, is_new_chain=" . ($is_new_chain ? 'true' : 'false'));
 error_log("process-step2.php: POST new_chain=" . (isset($_POST['new_chain']) ? $_POST['new_chain'] : 'not set'));
 error_log("process-step2.php: GET new_chain=" . (isset($_GET['new_chain']) ? $_GET['new_chain'] : 'not set'));
+error_log("process-step2.php: POST data: " . print_r($_POST, true));
 
 if ($project_id == 0) {
     $_SESSION['error_message'] = "ไม่พบข้อมูลโครงการ";
@@ -87,7 +89,7 @@ try {
         mysqli_stmt_close($check_strategy_stmt);
 
         // ตรวจสอบว่าเป็นการเพิ่ม chain ใหม่หรือแก้ไข chain เดิม
-        if ($add_new_chain) {
+        if ($add_new_chain || $is_new_chain) {
             // กรณีที่ 2 และ 3: เพิ่ม Impact Chain ใหม่ โดยหาลำดับถัดไป
             $next_sequence_query = "SELECT COALESCE(MAX(chain_sequence), 0) + 1 as next_sequence 
                                    FROM project_activities WHERE project_id = ?";
@@ -100,9 +102,9 @@ try {
             mysqli_stmt_close($next_sequence_stmt);
             
             // บันทึกกิจกรรมใหม่ด้วย chain_sequence ใหม่
-            $insert_query = "INSERT INTO project_activities (project_id, activity_id, chain_sequence, created_by) VALUES (?, ?, ?, ?)";
+            $insert_query = "INSERT INTO project_activities (project_id, activity_id, chain_sequence, created_by, act_details) VALUES (?, ?, ?, ?, ?)";
             $insert_stmt = mysqli_prepare($conn, $insert_query);
-            mysqli_stmt_bind_param($insert_stmt, 'iiss', $project_id, $selected_activity, $chain_sequence, $user_id);
+            mysqli_stmt_bind_param($insert_stmt, 'iisss', $project_id, $selected_activity, $chain_sequence, $user_id, $act_details);
             $insert_success = mysqli_stmt_execute($insert_stmt);
             mysqli_stmt_close($insert_stmt);
             
@@ -133,17 +135,17 @@ try {
             
             if ($has_existing) {
                 // อัปเดต chain เดิม
-                $update_query = "UPDATE project_activities SET activity_id = ?, updated_at = NOW() 
+                $update_query = "UPDATE project_activities SET activity_id = ?, act_details = ?, updated_at = NOW() 
                                WHERE project_id = ? AND chain_sequence = 1";
                 $update_stmt = mysqli_prepare($conn, $update_query);
-                mysqli_stmt_bind_param($update_stmt, 'ii', $selected_activity, $project_id);
+                mysqli_stmt_bind_param($update_stmt, 'isi', $selected_activity, $act_details, $project_id);
                 $insert_success = mysqli_stmt_execute($update_stmt);
                 mysqli_stmt_close($update_stmt);
             } else {
                 // สร้างใหม่
-                $insert_query = "INSERT INTO project_activities (project_id, activity_id, chain_sequence, created_by) VALUES (?, ?, ?, ?)";
+                $insert_query = "INSERT INTO project_activities (project_id, activity_id, chain_sequence, created_by, act_details) VALUES (?, ?, ?, ?, ?)";
                 $insert_stmt = mysqli_prepare($conn, $insert_query);
-                mysqli_stmt_bind_param($insert_stmt, 'iiss', $project_id, $selected_activity, $chain_sequence, $user_id);
+                mysqli_stmt_bind_param($insert_stmt, 'iisss', $project_id, $selected_activity, $chain_sequence, $user_id, $act_details);
                 $insert_success = mysqli_stmt_execute($insert_stmt);
                 mysqli_stmt_close($insert_stmt);
             }

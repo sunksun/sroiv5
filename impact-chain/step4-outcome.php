@@ -251,12 +251,19 @@ function getProxiesForOutcome($conn, $outcome_id)
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="../dashboard.php">Dashboard</a></li>
                         <li class="breadcrumb-item"><a href="step1-strategy.php?project_id=<?php echo $project_id; ?>">Step 1</a></li>
-                        <li class="breadcrumb-item"><a href="step2-activity.php?project_id=<?php echo $project_id; ?>">Step 2</a></li>
+                        <li class="breadcrumb-item"><a href="step2-activity.php?project_id=<?php echo $project_id; ?><?php echo ($chain_sequence > 1 ? '&new_chain=1' : ''); ?>">Step 2</a></li>
                         <li class="breadcrumb-item"><a href="step3-output.php?project_id=<?php echo $project_id; ?>&chain_sequence=<?php echo $chain_sequence; ?>">Step 3</a></li>
                         <li class="breadcrumb-item active">Step 4: ผลลัพธ์</li>
                     </ol>
                 </nav>
-                <h2>สร้าง Impact Chain: <?php echo htmlspecialchars($project['name']); ?></h2>
+                <?php if ($chain_sequence > 1): ?>
+                    <h2><i class="fas fa-plus text-success"></i> เพิ่ม Impact Chain ใหม่ (ลำดับที่ <?php echo $chain_sequence; ?>): <?php echo htmlspecialchars($project['name']); ?></h2>
+                    <div class="alert alert-success">
+                        <i class="fas fa-info-circle"></i> <strong>Impact Chain ลำดับที่ <?php echo $chain_sequence; ?></strong> - เลือกผลลัพธ์และกำหนดปีประเมินสำหรับ Impact Chain ใหม่นี้
+                    </div>
+                <?php else: ?>
+                    <h2>สร้าง Impact Chain: <?php echo htmlspecialchars($project['name']); ?></h2>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -265,6 +272,21 @@ function getProxiesForOutcome($conn, $outcome_id)
         $status = getImpactChainStatus($project_id);
         renderImpactChainProgressBar($project_id, 4, $status);
         ?>
+
+        <!-- Impact Chains Summary (สำหรับ chain ใหม่) -->
+        <?php if ($chain_sequence > 1): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-list"></i> สถานะ Impact Chains ในโครงการนี้:</h6>
+                    <div class="mb-0">
+                        <span class="badge bg-success me-2">Chain 1-<?php echo ($chain_sequence - 1); ?>: เสร็จสิ้นแล้ว</span>
+                        <span class="badge bg-primary">Chain <?php echo $chain_sequence; ?>: กำลังสร้าง (Step 4)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <div class="row mb-4">
             <div class="col-12">
@@ -1405,6 +1427,13 @@ function getProxiesForOutcome($conn, $outcome_id)
             outcomeInput.name = 'selected_outcome';
             outcomeInput.value = '0';
             form.appendChild(outcomeInput);
+            
+            // เพิ่ม evaluation_year ที่จำเป็นสำหรับการ process
+            const evaluationYearInput = document.createElement('input');
+            evaluationYearInput.type = 'hidden';
+            evaluationYearInput.name = 'evaluation_year';
+            evaluationYearInput.value = 'skip'; // ใช้ค่า 'skip' เพื่อระบุว่าข้ามการเลือกปี
+            form.appendChild(evaluationYearInput);
             
             // Submit ฟอร์ม
             document.body.appendChild(form);

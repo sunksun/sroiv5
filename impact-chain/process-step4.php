@@ -75,8 +75,8 @@ if ($project_id == 0) {
     exit;
 }
 
-// ตรวจสอบว่าได้เลือกปีที่ต้องการประเมินหรือไม่
-if (empty($evaluation_year)) {
+// ตรวจสอบว่าได้เลือกปีที่ต้องการประเมินหรือไม่ (ยกเว้นกรณีที่ข้ามไปหน้า completion)
+if (empty($evaluation_year) && $selected_outcome != 0) {
     if ($save_details_only) {
         header('Content-Type: application/json');
         echo json_encode([

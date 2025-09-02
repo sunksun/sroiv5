@@ -47,7 +47,7 @@ if (!$project) {
 $selected_activity = null;
 
 // ดึงข้อมูลกิจกรรมจาก project_activities ตาม chain_sequence
-$activity_query = "SELECT pa.activity_id, a.activity_name, a.activity_code, a.activity_description, s.strategy_id, s.strategy_name 
+$activity_query = "SELECT pa.activity_id, pa.act_details, a.activity_name, a.activity_code, a.activity_description, s.strategy_id, s.strategy_name 
                    FROM project_activities pa 
                    JOIN activities a ON pa.activity_id = a.activity_id 
                    JOIN strategies s ON a.strategy_id = s.strategy_id 
@@ -191,7 +191,14 @@ ksort($grouped_outputs);
                         <li class="breadcrumb-item active">Step 3: ผลผลิต</li>
                     </ol>
                 </nav>
-                <h2>สร้าง Impact Chain: <?php echo htmlspecialchars($project['name']); ?></h2>
+                <?php if ($chain_sequence > 1): ?>
+                    <h2><i class="fas fa-plus text-success"></i> เพิ่ม Impact Chain ใหม่ (ลำดับที่ <?php echo $chain_sequence; ?>): <?php echo htmlspecialchars($project['name']); ?></h2>
+                    <div class="alert alert-success">
+                        <i class="fas fa-info-circle"></i> <strong>Impact Chain ลำดับที่ <?php echo $chain_sequence; ?></strong> - เลือกผลผลิตสำหรับ Impact Chain ใหม่นี้
+                    </div>
+                <?php else: ?>
+                    <h2>สร้าง Impact Chain: <?php echo htmlspecialchars($project['name']); ?></h2>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -211,6 +218,21 @@ ksort($grouped_outputs);
         renderImpactChainProgressBar($project_id, 3, $status);
         ?>
 
+        <!-- Impact Chains Summary (สำหรับ chain ใหม่) -->
+        <?php if ($chain_sequence > 1): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-list"></i> สถานะ Impact Chains ในโครงการนี้:</h6>
+                    <div class="mb-0">
+                        <span class="badge bg-success me-2">Chain 1-<?php echo ($chain_sequence - 1); ?>: เสร็จสิ้นแล้ว</span>
+                        <span class="badge bg-primary">Chain <?php echo $chain_sequence; ?>: กำลังสร้าง</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Selected Activity Info -->
         <div class="row mb-4">
             <div class="col-12">
@@ -220,6 +242,12 @@ ksort($grouped_outputs);
                         <strong><?php echo htmlspecialchars($selected_activity['activity_name']); ?></strong>
                         <span class="badge bg-info ms-2"><?php echo htmlspecialchars($selected_activity['activity_code']); ?></span>
                         <br>
+                        <?php if (!empty($selected_activity['act_details'])): ?>
+                        <div class="mt-2 p-2 bg-light rounded">
+                            <small class="text-primary"><i class="fas fa-info-circle"></i> <strong>รายละเอียดกิจกรรม:</strong></small><br>
+                            <small><?php echo nl2br(htmlspecialchars($selected_activity['act_details'])); ?></small>
+                        </div>
+                        <?php endif; ?>
                         <small class="text-muted">
                             <i class="fas fa-bullseye"></i> ยุทธศาสตร์: <?php echo $selected_activity['strategy_id']; ?>. <?php echo htmlspecialchars($selected_activity['strategy_name']); ?>
                         </small>

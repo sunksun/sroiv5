@@ -24,12 +24,13 @@ if (!$conn) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
     $chain_id = isset($_POST['chain_id']) ? (int)$_POST['chain_id'] : 0;
+    $chain_sequence = isset($_POST['chain_sequence']) ? (int)$_POST['chain_sequence'] : 1;
     $evaluation_year = isset($_POST['evaluation_year']) ? trim($_POST['evaluation_year']) : '';
     $user_id = $_SESSION['user_id'];
     
     // Debug logging
     file_put_contents('/tmp/process_basecase.log', date('Y-m-d H:i:s') . " === process-basecase.php START ===\n", FILE_APPEND);
-    file_put_contents('/tmp/process_basecase.log', date('Y-m-d H:i:s') . " project_id=$project_id, chain_id=$chain_id, evaluation_year=$evaluation_year\n", FILE_APPEND);
+    file_put_contents('/tmp/process_basecase.log', date('Y-m-d H:i:s') . " project_id=$project_id, chain_id=$chain_id, chain_sequence=$chain_sequence, evaluation_year=$evaluation_year\n", FILE_APPEND);
     file_put_contents('/tmp/process_basecase.log', date('Y-m-d H:i:s') . " POST data: " . print_r($_POST, true) . "\n", FILE_APPEND);
     file_put_contents('/tmp/process_basecase.log', date('Y-m-d H:i:s') . " REQUEST_METHOD=" . $_SERVER["REQUEST_METHOD"] . "\n", FILE_APPEND);
 
@@ -151,23 +152,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         // Legacy - ใช้ตาราง project_impact_ratios
         
-        // ลบข้อมูลเก่า (ถ้ามี)
-        $delete_query = "DELETE FROM project_impact_ratios WHERE project_id = ?";
+        // ลบข้อมูลเก่าของ chain_sequence นี้เท่านั้น (ไม่ลบ chain อื่น)
+        $delete_query = "DELETE FROM project_impact_ratios WHERE project_id = ? AND chain_sequence = ?";
         $delete_stmt = mysqli_prepare($conn, $delete_query);
-        mysqli_stmt_bind_param($delete_stmt, 'i', $project_id);
+        mysqli_stmt_bind_param($delete_stmt, 'ii', $project_id, $chain_sequence);
         mysqli_stmt_execute($delete_stmt);
         mysqli_stmt_close($delete_stmt);
 
-        // เตรียม SQL สำหรับ insert (รวม year และ beneficiary)
-        $insert_query = "INSERT INTO project_impact_ratios (project_id, benefit_number, attribution, deadweight, displacement, impact_ratio, benefit_detail, beneficiary, benefit_note, year, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        // เตรียม SQL สำหรับ insert (รวม chain_sequence, year และ beneficiary)
+        $insert_query = "INSERT INTO project_impact_ratios (project_id, chain_sequence, benefit_number, attribution, deadweight, displacement, impact_ratio, benefit_detail, beneficiary, benefit_note, year, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $insert_stmt = mysqli_prepare($conn, $insert_query);
 
         $success_count = 0;
         foreach ($impact_data as $data) {
             mysqli_stmt_bind_param(
                 $insert_stmt,
-                'iiddddssss',
+                'iiiddddssss',
                 $project_id,
+                $chain_sequence,
                 $data['benefit_number'],
                 $data['attribution'],
                 $data['deadweight'],
