@@ -198,6 +198,8 @@ try {
     }
     mysqli_stmt_close($verify_stmt);
 
+    error_log("process-step4.php: All validations passed, proceeding to save outcome data");
+
     // บันทึกการเลือกผลลัพธ์ใหม่ พร้อม chain_sequence - สร้างแถวใหม่เสมอ
     $insert_query = "INSERT INTO project_outcomes (project_id, outcome_id, chain_sequence, outcome_details, created_by) VALUES (?, ?, ?, ?, ?)";
     $insert_stmt = mysqli_prepare($conn, $insert_query);
@@ -208,10 +210,21 @@ try {
     }
     mysqli_stmt_close($insert_stmt);
 
-    // บันทึกปีที่ต้องการประเมินในขั้นตอนบันทึกข้อมูลสัดส่วนผลกระทบเท่านั้น
-    // (ไม่บันทึกตอนบันทึกรายละเอียดเพิ่มเติม)
-    if (!$save_details_only) {
-        // สร้างแถวใหม่ในตาราง project_impact_ratios พร้อม chain_sequence
+    // ตรวจสอบว่ามี record ใน project_impact_ratios สำหรับ chain_sequence นี้หรือยัง
+    $check_ratio_query = "SELECT id FROM project_impact_ratios WHERE project_id = ? AND chain_sequence = ?";
+    $check_ratio_stmt = mysqli_prepare($conn, $check_ratio_query);
+    mysqli_stmt_bind_param($check_ratio_stmt, 'ii', $project_id, $chain_sequence);
+    mysqli_stmt_execute($check_ratio_stmt);
+    $ratio_result = mysqli_stmt_get_result($check_ratio_stmt);
+    $has_existing_ratio = mysqli_num_rows($ratio_result) > 0;
+    mysqli_stmt_close($check_ratio_stmt);
+    
+    error_log("process-step4.php: Checking existing ratio - project_id=$project_id, chain_sequence=$chain_sequence, has_existing=$has_existing_ratio, save_details_only=$save_details_only");
+    
+    // สร้างแถวใหม่ใน project_impact_ratios หาก:
+    // 1. ไม่ใช่การบันทึกรายละเอียดเท่านั้น หรือ
+    // 2. ยังไม่มี record สำหรับ chain_sequence นี้
+    if (!$save_details_only || !$has_existing_ratio) {
         $insert_ratio_query = "INSERT INTO project_impact_ratios (project_id, chain_sequence, year, benefit_number, benefit_note) VALUES (?, ?, ?, ?, ?)";
         $insert_ratio_stmt = mysqli_prepare($conn, $insert_ratio_query);
         $benefit_number = 1; // ค่าเริ่มต้นสำหรับการบันทึกข้อมูลสัดส่วนผลกระทบ
@@ -222,6 +235,9 @@ try {
             throw new Exception("เกิดข้อผิดพลาดในการบันทึกข้อมูลสัดส่วนผลกระทบ");
         }
         mysqli_stmt_close($insert_ratio_stmt);
+        error_log("process-step4.php: Created new project_impact_ratios record for chain_sequence=$chain_sequence");
+    } else {
+        error_log("process-step4.php: project_impact_ratios record already exists for chain_sequence=$chain_sequence");
     }
 
     // เก็บปีที่เลือกใน session เพื่อใช้ในหน้าอื่น

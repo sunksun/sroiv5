@@ -94,8 +94,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // บันทึกเฉพาะรายการที่มีข้อมูล
             if ($attribution > 0 || $deadweight > 0 || $displacement > 0 || $drop_off > 0 || !empty($benefit_detail) || !empty($beneficiary) || !empty($benefit_note)) {
+                // ใช้ chain_sequence เป็น benefit_number เพื่อแยกแต่ละ chain เป็นผลประโยชน์แยกกัน
                 $impact_data[] = array(
-                    'benefit_number' => $i,
+                    'benefit_number' => $chain_sequence,
                     'attribution' => $attribution,
                     'deadweight' => $deadweight,
                     'displacement' => $displacement,

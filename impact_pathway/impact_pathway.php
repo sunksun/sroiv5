@@ -91,7 +91,9 @@ if ($project_id > 0) {
     // Step 2: ดึงกิจกรรมที่โครงการเลือกใช้ (ทั้งระบบเดิมและใหม่)
     // ระบบเดิม - จาก project_activities
     $activities_query_legacy = "
-        SELECT DISTINCT a.activity_id, a.activity_code, a.activity_name, a.activity_description, 'legacy' as source_type
+        SELECT DISTINCT a.activity_id, a.activity_code, 
+               CAST(COALESCE(pa.act_details, a.activity_name) AS CHAR CHARACTER SET utf8mb4) as activity_name, 
+               a.activity_description, 'legacy' as source_type
         FROM activities a
         INNER JOIN project_activities pa ON a.activity_id = pa.activity_id
         WHERE pa.project_id = ?
@@ -99,7 +101,7 @@ if ($project_id > 0) {
 
     // ระบบใหม่ - จาก impact_chains
     $activities_query_new = "
-        SELECT DISTINCT a.activity_id, a.activity_code, a.activity_name, a.activity_description, 'new_chain' as source_type
+        SELECT DISTINCT a.activity_id, a.activity_code, CAST(a.activity_name AS CHAR CHARACTER SET utf8mb4) as activity_name, a.activity_description, 'new_chain' as source_type
         FROM activities a
         INNER JOIN impact_chains ic ON a.activity_id = ic.activity_id
         WHERE ic.project_id = ?
@@ -136,11 +138,13 @@ if ($project_id > 0) {
     // ดึงผลผลิตจากระบบเดิม (project_outputs)
     $outputs_query_legacy = "
         SELECT DISTINCT o.output_id, o.output_sequence, o.output_description, o.target_details, o.activity_id,
-               po.output_details as project_output_details, a.activity_code, a.activity_name,
+               po.output_details as project_output_details, a.activity_code, 
+               COALESCE(pa.act_details, a.activity_name) as activity_name,
                'legacy' as source_type
         FROM outputs o
         INNER JOIN project_outputs po ON o.output_id = po.output_id
         INNER JOIN activities a ON o.activity_id = a.activity_id
+        LEFT JOIN project_activities pa ON a.activity_id = pa.activity_id AND po.project_id = pa.project_id
         WHERE po.project_id = ?
         ORDER BY a.activity_code, o.output_sequence
     ";
@@ -157,12 +161,14 @@ if ($project_id > 0) {
     // ดึงผลผลิตจากระบบใหม่ (impact_chain_outputs)
     $outputs_query_new = "
         SELECT DISTINCT o.output_id, o.output_sequence, o.output_description, o.target_details, o.activity_id,
-               ico.output_details as project_output_details, a.activity_code, a.activity_name,
+               ico.output_details as project_output_details, a.activity_code, 
+               COALESCE(pa.act_details, a.activity_name) as activity_name,
                'new_chain' as source_type, ic.id as chain_id
         FROM outputs o
         INNER JOIN impact_chain_outputs ico ON o.output_id = ico.output_id
         INNER JOIN impact_chains ic ON ico.impact_chain_id = ic.id
         INNER JOIN activities a ON ic.activity_id = a.activity_id
+        LEFT JOIN project_activities pa ON a.activity_id = pa.activity_id AND ic.project_id = pa.project_id
         WHERE ic.project_id = ?
         ORDER BY a.activity_code, o.output_sequence
     ";
@@ -191,11 +197,12 @@ if ($project_id > 0) {
         SELECT DISTINCT oc.outcome_id, oc.outcome_sequence, oc.outcome_description, 
                o.output_sequence, o.output_description as output_desc, o.activity_id,
                po_custom.outcome_details as project_outcome_details,
-               a.activity_code, a.activity_name, 'legacy' as source_type
+               a.activity_code, COALESCE(pa.act_details, a.activity_name) as activity_name, 'legacy' as source_type
         FROM project_outcomes po_custom
         INNER JOIN outcomes oc ON po_custom.outcome_id = oc.outcome_id
         INNER JOIN outputs o ON oc.output_id = o.output_id
         INNER JOIN activities a ON o.activity_id = a.activity_id
+        LEFT JOIN project_activities pa ON a.activity_id = pa.activity_id AND po_custom.project_id = pa.project_id
         WHERE po_custom.project_id = ?
     ";
 
@@ -213,12 +220,13 @@ if ($project_id > 0) {
         SELECT DISTINCT oc.outcome_id, oc.outcome_sequence, oc.outcome_description, 
                o.output_sequence, o.output_description as output_desc, o.activity_id,
                ico.outcome_details as project_outcome_details,
-               a.activity_code, a.activity_name, 'new_chain' as source_type, ic.id as chain_id
+               a.activity_code, COALESCE(pa.act_details, a.activity_name) as activity_name, 'new_chain' as source_type, ic.id as chain_id
         FROM impact_chain_outcomes ico
         INNER JOIN outcomes oc ON ico.outcome_id = oc.outcome_id
         INNER JOIN outputs o ON oc.output_id = o.output_id
         INNER JOIN impact_chains ic ON ico.impact_chain_id = ic.id
         INNER JOIN activities a ON ic.activity_id = a.activity_id
+        LEFT JOIN project_activities pa ON a.activity_id = pa.activity_id AND ic.project_id = pa.project_id
         WHERE ic.project_id = ?
     ";
 
