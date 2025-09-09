@@ -177,6 +177,69 @@ function calculateNPV($cash_flows, $discount_rate) {
 }
 
 /**
+ * คำนวณ Internal Rate of Return (IRR) โดยใช้วิธี Newton-Raphson
+ */
+function calculateIRR($cash_flows, $max_iterations = 100, $tolerance = 0.0001) {
+    // ตรวจสอบว่ามี cash flows หรือไม่
+    if (empty($cash_flows)) {
+        return null;
+    }
+    
+    // ตรวจสอบสัญญาณของ cash flows (ต้องมีทั้งบวกและลบ)
+    $positive = false;
+    $negative = false;
+    foreach ($cash_flows as $flow) {
+        if ($flow > 0) $positive = true;
+        if ($flow < 0) $negative = true;
+    }
+    
+    if (!$positive || !$negative) {
+        return null; // ไม่สามารถคำนวณ IRR ได้
+    }
+    
+    // เริ่มต้นด้วย guess rate = 10%
+    $rate = 0.1;
+    
+    for ($i = 0; $i < $max_iterations; $i++) {
+        $npv = 0;
+        $dnpv = 0; // derivative ของ NPV
+        
+        // คำนวณ NPV และ derivative
+        $year = 0;
+        foreach ($cash_flows as $flow) {
+            $factor = pow(1 + $rate, $year);
+            $npv += $flow / $factor;
+            
+            if ($year > 0) {
+                $dnpv -= ($year * $flow) / pow(1 + $rate, $year + 1);
+            }
+            $year++;
+        }
+        
+        // ตรวจสอบความแม่นยำ
+        if (abs($npv) < $tolerance) {
+            return $rate;
+        }
+        
+        // Newton-Raphson formula: rate = rate - f(rate)/f'(rate)
+        if ($dnpv == 0) {
+            break; // หลีกเลี่ยงการหารด้วย 0
+        }
+        
+        $new_rate = $rate - $npv / $dnpv;
+        
+        // ป้องกัน rate ติดลบมากเกินไป
+        if ($new_rate < -0.99) {
+            $new_rate = -0.99;
+        }
+        
+        $rate = $new_rate;
+    }
+    
+    return $rate; // return rate แม้ว่าจะไม่ converge ก็ตาม
+}
+
+/**
  * คำนวณ SROI Ratio
  */
 function calculateSROIRatio($total_benefits, $total_costs) {
