@@ -10,7 +10,7 @@ SROIV4 is a Social Return on Investment (SROI) evaluation system built in PHP wi
 
 This is a XAMPP/local PHP development project:
 - **Server**: XAMPP (Apache + MySQL + PHP)  
-- **Database**: MariaDB/MySQL (database name: `sroiv4`)
+- **Database**: MariaDB/MySQL (database name: `sroiv5`)
 - **Frontend**: Bootstrap 5, vanilla JavaScript with Thai language support
 - **Architecture**: Traditional PHP with session-based authentication
 
@@ -19,11 +19,11 @@ This is a XAMPP/local PHP development project:
 ### Database Setup
 ```bash
 # Import main database structure
-mysql -u root -p sroiv4 < sroiv4.sql
+mysql -u root -p sroiv5 < sroiv4.sql
 
 # Apply updates if needed  
-mysql -u root -p sroiv4 < database-update.sql
-mysql -u root -p sroiv4 < benefit_note_migration.sql
+mysql -u root -p sroiv5 < database-update.sql
+mysql -u root -p sroiv5 < benefit_note_migration.sql
 ```
 
 ### Connection Configuration
@@ -31,7 +31,7 @@ Database connection is configured in `config.php`:
 - Host: localhost
 - Username: root  
 - Password: (empty)
-- Database: sroiv4
+- Database: sroiv5
 
 ## Core System Architecture
 
@@ -86,7 +86,7 @@ Located in `impact_pathway/` directory:
 sudo /Applications/XAMPP/xamppfiles/xampp start
 
 # Access application
-# http://localhost/sroiv4/
+# http://localhost/sroiv5/
 ```
 
 ### Testing Database Connections

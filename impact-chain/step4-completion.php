@@ -65,6 +65,93 @@ $progress_data = [
 // Debug: แสดงข้อมูลสถานะ
 // echo "<!-- Debug: step4_completed = " . ($status['step4_completed'] ? 'true' : 'false') . " -->";
 // echo "<!-- Debug: total_chains = $total_chains, completed_chains = $completed_chains -->";
+
+// ดึงข้อมูลจากทุกขั้นตอนของโครงการ
+$project_strategies = [];  // Step 1
+$project_activities = [];  // Step 2
+$project_outputs = [];     // Step 3
+$project_outcomes = [];    // Step 4
+
+if ($project_id > 0) {
+    // Step 1: ดึงยุทธศาสตร์ที่โครงการเลือกใช้
+    $strategies_query = "
+        SELECT DISTINCT s.strategy_id, s.strategy_code, s.strategy_name, s.description
+        FROM strategies s
+        INNER JOIN project_strategies ps ON s.strategy_id = ps.strategy_id
+        WHERE ps.project_id = ?
+        ORDER BY s.strategy_code
+    ";
+    $strategies_stmt = mysqli_prepare($conn, $strategies_query);
+    mysqli_stmt_bind_param($strategies_stmt, "i", $project_id);
+    mysqli_stmt_execute($strategies_stmt);
+    $strategies_result = mysqli_stmt_get_result($strategies_stmt);
+    while ($strategy = mysqli_fetch_assoc($strategies_result)) {
+        $project_strategies[] = $strategy;
+    }
+    mysqli_stmt_close($strategies_stmt);
+
+    // Step 2: ดึงกิจกรรมที่โครงการเลือกใช้
+    $activities_query = "
+        SELECT DISTINCT a.activity_id, a.activity_code, 
+               COALESCE(pa.act_details, a.activity_name) as activity_name, 
+               a.activity_description
+        FROM activities a
+        INNER JOIN project_activities pa ON a.activity_id = pa.activity_id
+        WHERE pa.project_id = ?
+        ORDER BY a.activity_code
+    ";
+    $activities_stmt = mysqli_prepare($conn, $activities_query);
+    mysqli_stmt_bind_param($activities_stmt, "i", $project_id);
+    mysqli_stmt_execute($activities_stmt);
+    $activities_result = mysqli_stmt_get_result($activities_stmt);
+    while ($activity = mysqli_fetch_assoc($activities_result)) {
+        $project_activities[] = $activity;
+    }
+    mysqli_stmt_close($activities_stmt);
+
+    // Step 3: ดึงผลผลิตที่โครงการเลือกใช้
+    $outputs_query = "
+        SELECT DISTINCT o.output_id, o.output_sequence, o.output_description, 
+               po.output_details as project_output_details, a.activity_code, 
+               COALESCE(pa.act_details, a.activity_name) as activity_name
+        FROM outputs o
+        INNER JOIN project_outputs po ON o.output_id = po.output_id
+        INNER JOIN activities a ON o.activity_id = a.activity_id
+        LEFT JOIN project_activities pa ON a.activity_id = pa.activity_id AND po.project_id = pa.project_id
+        WHERE po.project_id = ?
+        ORDER BY a.activity_code, o.output_sequence
+    ";
+    $outputs_stmt = mysqli_prepare($conn, $outputs_query);
+    mysqli_stmt_bind_param($outputs_stmt, "i", $project_id);
+    mysqli_stmt_execute($outputs_stmt);
+    $outputs_result = mysqli_stmt_get_result($outputs_stmt);
+    while ($output = mysqli_fetch_assoc($outputs_result)) {
+        $project_outputs[] = $output;
+    }
+    mysqli_stmt_close($outputs_stmt);
+
+    // Step 4: ดึงผลลัพธ์ที่โครงการเลือกใช้
+    $outcomes_query = "
+        SELECT DISTINCT oc.outcome_id, oc.outcome_sequence, oc.outcome_description, 
+               po_custom.outcome_details as project_outcome_details,
+               a.activity_code, COALESCE(pa.act_details, a.activity_name) as activity_name
+        FROM project_outcomes po_custom
+        INNER JOIN outcomes oc ON po_custom.outcome_id = oc.outcome_id
+        INNER JOIN outputs o ON oc.output_id = o.output_id
+        INNER JOIN activities a ON o.activity_id = a.activity_id
+        LEFT JOIN project_activities pa ON a.activity_id = pa.activity_id AND po_custom.project_id = pa.project_id
+        WHERE po_custom.project_id = ?
+        ORDER BY a.activity_code, oc.outcome_sequence
+    ";
+    $outcomes_stmt = mysqli_prepare($conn, $outcomes_query);
+    mysqli_stmt_bind_param($outcomes_stmt, "i", $project_id);
+    mysqli_stmt_execute($outcomes_stmt);
+    $outcomes_result = mysqli_stmt_get_result($outcomes_stmt);
+    while ($outcome = mysqli_fetch_assoc($outcomes_result)) {
+        $project_outcomes[] = $outcome;
+    }
+    mysqli_stmt_close($outcomes_stmt);
+}
 ?>
 
 <!DOCTYPE html>
@@ -186,6 +273,106 @@ $progress_data = [
             </div>
         </div>
 
+        <!-- Complete Project Data Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> ข้อมูลรายละเอียดทั้งหมดที่บันทึกข้อมูลมาตั้งแต่ Step 1-4</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Step 1 Data -->
+                        <div class="mb-4">
+                            <h6><span class="badge bg-primary">Step 1</span> ยุทธศาสตร์ที่เลือก (<?php echo count($project_strategies); ?> รายการ)</h6>
+                            <?php if (!empty($project_strategies)): ?>
+                                <div class="row">
+                                    <?php foreach ($project_strategies as $strategy): ?>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="p-2 bg-light rounded">
+                                                <strong><?php echo htmlspecialchars($strategy['strategy_code']); ?></strong>:
+                                                <?php echo htmlspecialchars($strategy['strategy_name']); ?>
+                                                <?php if (!empty($strategy['description'])): ?>
+                                                    <br><small class="text-muted"><?php echo htmlspecialchars($strategy['description']); ?></small>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-muted">ยังไม่มีข้อมูลยุทธศาสตร์</div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Step 2 Data -->
+                        <div class="mb-4">
+                            <h6><span class="badge bg-warning">Step 2</span> กิจกรรมที่เลือก (<?php echo count($project_activities); ?> รายการ)</h6>
+                            <?php if (!empty($project_activities)): ?>
+                                <div class="row">
+                                    <?php foreach ($project_activities as $activity): ?>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="p-2 bg-light rounded">
+                                                <strong><?php echo htmlspecialchars($activity['activity_code']); ?></strong>:
+                                                <?php echo htmlspecialchars($activity['activity_name']); ?>
+                                                <?php if (!empty($activity['activity_description'])): ?>
+                                                    <br><small class="text-muted"><?php echo htmlspecialchars($activity['activity_description']); ?></small>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-muted">ยังไม่มีข้อมูลกิจกรรม</div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Step 3 Data -->
+                        <div class="mb-4">
+                            <h6><span class="badge bg-info">Step 3</span> ผลผลิตที่เลือก (<?php echo count($project_outputs); ?> รายการ)</h6>
+                            <?php if (!empty($project_outputs)): ?>
+                                <div class="row">
+                                    <?php foreach ($project_outputs as $output): ?>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="p-2 bg-light rounded">
+                                                <strong><?php echo htmlspecialchars($output['output_sequence']); ?></strong>
+                                                <?php if (!empty($output['project_output_details'])): ?>
+                                                    <br><small class="text-success">รายละเอียด: <?php echo htmlspecialchars($output['project_output_details']); ?></small>
+                                                <?php endif; ?>
+                                                <br><small class="text-muted">กิจกรรม: <?php echo htmlspecialchars($output['activity_name']); ?></small>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-muted">ยังไม่มีข้อมูลผลผลิต</div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Step 4 Data -->
+                        <div class="mb-4">
+                            <h6><span class="badge bg-success">Step 4</span> ผลลัพธ์ที่เลือก (<?php echo count($project_outcomes); ?> รายการ)</h6>
+                            <?php if (!empty($project_outcomes)): ?>
+                                <div class="row">
+                                    <?php foreach ($project_outcomes as $outcome): ?>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="p-2 bg-light rounded">
+                                                <strong><?php echo htmlspecialchars($outcome['outcome_sequence']); ?></strong>
+                                                <?php if (!empty($outcome['project_outcome_details'])): ?>
+                                                    <br><small class="text-success">รายละเอียด: <?php echo htmlspecialchars($outcome['project_outcome_details']); ?></small>
+                                                <?php endif; ?>
+                                                <br><small class="text-muted">กิจกรรม: <?php echo htmlspecialchars($outcome['activity_name']); ?></small>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-muted">ยังไม่มีข้อมูลผลลัพธ์</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Action Options -->
         <div class="row mb-4">
             <div class="col-12">
@@ -276,8 +463,8 @@ $progress_data = [
             setTimeout(function() {
                 alert('<?php echo $_SESSION['success_message']; ?>');
             }, 500);
-        <?php 
-            unset($_SESSION['success_message']); 
+        <?php
+            unset($_SESSION['success_message']);
         endif; ?>
     </script>
 </body>

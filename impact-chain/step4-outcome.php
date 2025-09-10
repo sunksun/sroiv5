@@ -439,41 +439,6 @@ function getProxiesForOutcome($conn, $outcome_id)
                 </div>
 
                 <div class="modal-body">
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0 text-secondary">
-                                <i class="fas fa-calendar-alt"></i> เลือกปีที่ต้องการประเมิน
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="row">
-                                        <?php if (!empty($evaluation_years)): ?>
-                                            <?php foreach ($evaluation_years as $index => $year): ?>
-                                                <div class="col-md-3 col-6 mb-2">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="evaluation_year"
-                                                            id="year<?php echo htmlspecialchars($year['year_be']); ?>"
-                                                            value="<?php echo htmlspecialchars($year['year_be']); ?>"
-                                                            <?php echo ($index == 0) ? 'checked' : ''; ?>>
-                                                        <label class="form-check-label fw-bold" for="year<?php echo htmlspecialchars($year['year_be']); ?>">
-                                                            <?php echo htmlspecialchars($year['year_display']); ?>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <div class="col-12">
-                                                <p class="text-muted">ไม่พบข้อมูลปีที่สามารถเลือกได้</p>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="mb-4">
                         <label class="form-label fw-bold">ผลลัพธ์ที่เลือก:</label>
                         <div class="p-3 bg-light rounded">
@@ -583,6 +548,42 @@ function getProxiesForOutcome($conn, $outcome_id)
                             </h6>
                         </div>
                         <div class="card-body">
+                            <!-- Year Selection Section -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-secondary">
+                                        <i class="fas fa-calendar-alt"></i> เลือกปีที่ต้องการประเมิน
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="row">
+                                                <?php if (!empty($evaluation_years)): ?>
+                                                    <?php foreach ($evaluation_years as $index => $year): ?>
+                                                        <div class="col-md-3 col-6 mb-2">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="evaluation_year"
+                                                                    id="year<?php echo htmlspecialchars($year['year_be']); ?>"
+                                                                    value="<?php echo htmlspecialchars($year['year_be']); ?>"
+                                                                    <?php echo ($index == 0) ? 'checked' : ''; ?>>
+                                                                <label class="form-check-label fw-bold" for="year<?php echo htmlspecialchars($year['year_be']); ?>">
+                                                                    <?php echo htmlspecialchars($year['year_display']); ?>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    <div class="col-12">
+                                                        <p class="text-muted">ไม่พบข้อมูลปีที่สามารถเลือกได้</p>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <h6 class="text-primary mb-3">
                                 <i class="fas fa-list"></i> ข้อมูลผลประโยชน์
                             </h6>
@@ -611,11 +612,9 @@ function getProxiesForOutcome($conn, $outcome_id)
                                                     placeholder="ระบุผู้ใช้ประโยชน์..."></textarea>
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control number-only"
+                                                <textarea class="form-control" rows="3"
                                                     name="benefit_note_1"
-                                                    placeholder="กรอกจำนวนเงิน (บาท/ปี)"
-                                                    pattern="[0-9,]+"
-                                                    title="กรุณาใส่ตัวเลขเท่านั้น">
+                                                    placeholder="กรอกจำนวนเงิน (บาท/ปี) หรือข้อความ"></textarea>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -643,25 +642,25 @@ function getProxiesForOutcome($conn, $outcome_id)
                                                 <input type="number" class="form-control form-control-sm"
                                                     name="attribution_1"
                                                     step="0.01" min="0" max="100"
-                                                    value="20"
+                                                    value="0.00"
                                                     onchange="calculateImpact(1)">
                                             </td>
                                             <td>
                                                 <input type="number" class="form-control form-control-sm"
                                                     name="deadweight_1"
                                                     step="0.01" min="0" max="100"
-                                                    value="10"
+                                                    value="0.00"
                                                     onchange="calculateImpact(1)">
                                             </td>
                                             <td>
                                                 <input type="number" class="form-control form-control-sm"
                                                     name="displacement_1"
                                                     step="0.01" min="0" max="100"
-                                                    value="30"
+                                                    value="0.00"
                                                     onchange="calculateImpact(1)">
                                             </td>
                                             <td class="text-center">
-                                                <span id="result_1" class="fw-bold text-success">40%</span>
+                                                <span id="result_1" class="fw-bold text-success">100.00%</span>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -694,24 +693,13 @@ function getProxiesForOutcome($conn, $outcome_id)
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ฟังก์ชันจัดรูปแบบตัวเลขสำหรับจำนวนเงิน
-        function formatNumberInput(input) {
-            // ลบคอมมาออกก่อนเพื่อให้ได้ตัวเลขล้วน
-            let value = input.value.replace(/,/g, '');
+        // หมายเหตุ: ลบฟังก์ชันจัดรูปแบบตัวเลขเดิม เพื่อให้รองรับทั้งตัวเลขและข้อความ
 
-            // ตรวจสอบว่าเป็นตัวเลขหรือไม่
-            if (value && !isNaN(value)) {
-                // แปลงเป็นจำนวนเต็มและจัดรูปแบบให้มีคอมมา
-                const intValue = parseInt(value);
-                if (!isNaN(intValue)) {
-                    input.value = intValue.toLocaleString('th-TH');
-                }
-            }
-        }
-
-        // ฟังก์ชันลบคอมมาออกจากตัวเลขเพื่อการคำนวณ
+        // ฟังก์ชันดึงค่าตัวเลขจากข้อมูล (ใช้สำหรับการคำนวณ)
         function getNumericValue(input) {
-            return parseInt(input.value.replace(/,/g, '')) || 0;
+            const value = input.value.toString().replace(/,/g, '');
+            const numericValue = parseFloat(value);
+            return isNaN(numericValue) ? 0 : numericValue;
         }
 
         // ฟังก์ชันรีเซ็ตฟอร์มให้ว่าง (สำหรับ new chain)
@@ -729,17 +717,16 @@ function getProxiesForOutcome($conn, $outcome_id)
                             placeholder="ระบุผู้ใช้ประโยชน์..."></textarea>
                     </td>
                     <td>
-                        <input type="text" class="form-control number-only" name="benefit_note_1"
-                            placeholder="กรอกจำนวนเงิน (บาท/ปี)"
-                            pattern="[0-9,]+" title="กรุณาใส่ตัวเลขเท่านั้น">
+                        <textarea class="form-control" rows="3" name="benefit_note_1"
+                            placeholder="กรอกจำนวนเงิน (บาท/ปี) หรือข้อความ"></textarea>
                     </td>
                 </tr>
             `;
 
             // รีเซ็ตค่าสัดส่วนผลกระทบ
-            document.querySelector('input[name="attribution_1"]').value = '0';
-            document.querySelector('input[name="deadweight_1"]').value = '0';
-            document.querySelector('input[name="displacement_1"]').value = '0';
+            document.querySelector('input[name="attribution_1"]').value = '0.00';
+            document.querySelector('input[name="deadweight_1"]').value = '0.00';
+            document.querySelector('input[name="displacement_1"]').value = '0.00';
 
             // แสดงฟอร์มและซ่อนส่วนที่บันทึกแล้ว
             document.getElementById('formulaSection').style.display = 'block';
@@ -754,42 +741,28 @@ function getProxiesForOutcome($conn, $outcome_id)
         // เพิ่ม event listener สำหรับ input field จำนวนเงิน
         document.addEventListener('DOMContentLoaded', function() {
             // เพิ่ม event listener สำหรับ input จำนวนเงินที่มีอยู่แล้ว
-            const existingMoneyInput = document.querySelector('input[name="benefit_note_1"]');
-            if (existingMoneyInput) {
-                existingMoneyInput.addEventListener('blur', function() {
-                    formatNumberInput(this);
-                });
-            }
+            const existingMoneyInput = document.querySelector('textarea[name="benefit_note_1"]');
+            // หมายเหตุ: ลบการจัดรูปแบบตัวเลขอัตโนมัติ เพื่อให้รองรับข้อความ
         });
 
-        // ป้องกันการพิมพ์ตัวอักษรในช่องจำนวนเงิน
-        document.addEventListener('input', function(e) {
-            if (e.target.classList.contains('number-only')) {
-                // อนุญาตเฉพาะตัวเลข 0-9 และคอมมา
-                e.target.value = e.target.value.replace(/[^0-9,]/g, '');
-            }
-        });
+        // หมายเหตุ: ลบการป้องกันการพิมพ์ตัวอักษรแล้ว เพื่อให้สามารถกรอกทั้งตัวเลขและข้อความได้
 
-        // ป้องกันการวางข้อความที่ไม่ใช่ตัวเลข
-        document.addEventListener('paste', function(e) {
-            if (e.target.classList.contains('number-only')) {
-                e.preventDefault();
-                const pastedData = (e.clipboardData || window.clipboardData).getData('text');
-                const numericData = pastedData.replace(/[^0-9,]/g, '');
-                e.target.value = numericData;
-                formatNumber(e.target);
+        // ฟังก์ชันจัดรูปแบบการแสดงผล benefit_note
+        function formatBenefitNote(value) {
+            // ตรวจสอบว่าเป็นตัวเลขหรือไม่
+            const numericValue = parseFloat(value.toString().replace(/,/g, ''));
+            
+            if (!isNaN(numericValue) && isFinite(numericValue)) {
+                // ถ้าเป็นตัวเลข ให้จัดรูปแบบพร้อมคอมมาและใส่ "บาท"
+                return numericValue.toLocaleString('th-TH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) + ' บาท';
+            } else {
+                // ถ้าเป็นข้อความ ให้แสดงตรงๆ
+                return value.toString();
             }
-        });
-
-        // ป้องกันการกดปุ่มที่ไม่ใช่ตัวเลข
-        document.addEventListener('keypress', function(e) {
-            if (e.target.classList.contains('number-only')) {
-                const char = String.fromCharCode(e.which);
-                if (!/[0-9,]/.test(char) && e.which !== 8 && e.which !== 46) {
-                    e.preventDefault();
-                }
-            }
-        });
+        }
 
         // เพิ่ม visual feedback เมื่อเลือก outcome
         document.querySelectorAll('input[name="selected_outcome"]').forEach(radio => {
@@ -1136,28 +1109,17 @@ function getProxiesForOutcome($conn, $outcome_id)
                             placeholder="ระบุผู้ใช้ประโยชน์...">${record.beneficiary || ''}</textarea>
                     </td>
                     <td>
-                        <input type="text" class="form-control number-only"
+                        <textarea class="form-control" rows="3"
                             name="benefit_note_${rowNumber}"
-                            value="${record.benefit_note || ''}"
-                            placeholder="กรอกจำนวนเงิน (บาท/ปี)"
-                            pattern="[0-9,]+"
-                            title="กรุณาใส่ตัวเลขเท่านั้น">
+                            placeholder="กรอกจำนวนเงิน (บาท/ปี) หรือข้อความ">${record.benefit_note || ''}</textarea>
                     </td>
                 `;
                 benefitTableBody.appendChild(newBenefitRow);
 
                 // เพิ่ม event listener สำหรับ input field จำนวนเงิน
-                const moneyInput = newBenefitRow.querySelector(`input[name="benefit_note_${rowNumber}"]`);
+                const moneyInput = newBenefitRow.querySelector(`textarea[name="benefit_note_${rowNumber}"]`);
                 if (moneyInput) {
-                    // ฟอร์แมตค่าเริ่มต้นถ้ามีข้อมูล
-                    if (record.benefit_note && record.benefit_note !== '') {
-                        formatNumberInput(moneyInput);
-                    }
-
-                    // เพิ่ม event listener สำหรับการจัดรูปแบบ
-                    moneyInput.addEventListener('blur', function() {
-                        formatNumberInput(this);
-                    });
+                    // หมายเหตุ: ลบการจัดรูปแบบตัวเลขอัตโนมัติ เพื่อให้รองรับข้อความ
                 }
 
                 // สร้างแถวในตารางสัดส่วนผลกระทบ
@@ -1206,18 +1168,14 @@ function getProxiesForOutcome($conn, $outcome_id)
             const firstRecord = records[0];
             document.getElementById('savedBenefitDetail').textContent = firstRecord.benefit_detail || '-';
 
-            // ฟอร์แมตจำนวนเงินให้มีคอมมา
+            // จัดรูปแบบการแสดงผลจำนวนเงิน
             const benefitNote = firstRecord.benefit_note || '0';
-            const formattedAmount = parseFloat(benefitNote).toLocaleString('th-TH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            document.getElementById('savedBenefitNote').textContent = formattedAmount + ' บาท';
+            document.getElementById('savedBenefitNote').textContent = formatBenefitNote(benefitNote);
 
-            document.getElementById('savedAttribution').textContent = firstRecord.attribution + '%';
-            document.getElementById('savedDeadweight').textContent = firstRecord.deadweight + '%';
-            document.getElementById('savedDisplacement').textContent = firstRecord.displacement + '%';
-            document.getElementById('savedResult').textContent = (firstRecord.impact_ratio * 100).toFixed(1) + '%';
+            document.getElementById('savedAttribution').textContent = parseFloat(firstRecord.attribution).toFixed(2) + '%';
+            document.getElementById('savedDeadweight').textContent = parseFloat(firstRecord.deadweight).toFixed(2) + '%';
+            document.getElementById('savedDisplacement').textContent = parseFloat(firstRecord.displacement).toFixed(2) + '%';
+            document.getElementById('savedResult').textContent = (firstRecord.impact_ratio * 100).toFixed(2) + '%';
 
             // ถ้ามีหลายรายการ แสดงจำนวนรวม
             if (records.length > 1) {
@@ -1264,7 +1222,7 @@ function getProxiesForOutcome($conn, $outcome_id)
                 // ดึงข้อมูลจากฟอร์ม (รองรับทั้ง input และ textarea)
                 const benefitDetailInput = document.querySelector(`textarea[name="benefit_detail_${rowNumber}"]`);
                 const beneficiaryInput = document.querySelector(`textarea[name="beneficiary_${rowNumber}"]`);
-                const benefitNoteInput = document.querySelector(`input[name="benefit_note_${rowNumber}"]`);
+                const benefitNoteInput = document.querySelector(`textarea[name="benefit_note_${rowNumber}"]`);
                 const attributionInput = document.querySelector(`input[name="attribution_${rowNumber}"]`);
                 const deadweightInput = document.querySelector(`input[name="deadweight_${rowNumber}"]`);
                 const displacementInput = document.querySelector(`input[name="displacement_${rowNumber}"]`);
@@ -1272,8 +1230,8 @@ function getProxiesForOutcome($conn, $outcome_id)
                 if (benefitDetailInput && attributionInput && deadweightInput && displacementInput) {
                     const benefitDetail = benefitDetailInput.value.trim();
                     const beneficiary = beneficiaryInput ? beneficiaryInput.value.trim() : '';
-                    // แปลงจำนวนเงินที่มีคอมมากลับเป็นตัวเลขล้วน (ฟังก์ชัน saveBestPracticeData)
-                    const benefitNote = benefitNoteInput.value.replace(/,/g, '').trim();
+                    // รับข้อมูล benefit_note โดยตรง (ไม่แปลงเป็นตัวเลข)
+                    const benefitNote = benefitNoteInput.value.trim();
                     const attribution = attributionInput.value;
                     const deadweight = deadweightInput.value;
                     const displacement = displacementInput.value;
@@ -1299,7 +1257,7 @@ function getProxiesForOutcome($conn, $outcome_id)
                 const rowNumber = index + 1;
                 const benefitDetailInput = document.querySelector(`textarea[name="benefit_detail_${rowNumber}"]`);
                 const beneficiaryInput = document.querySelector(`textarea[name="beneficiary_${rowNumber}"]`);
-                const benefitNoteInput = document.querySelector(`input[name="benefit_note_${rowNumber}"]`);
+                const benefitNoteInput = document.querySelector(`textarea[name="benefit_note_${rowNumber}"]`);
                 const attributionInput = document.querySelector(`input[name="attribution_${rowNumber}"]`);
 
                 console.log(`Row ${rowNumber}:`, {
@@ -1367,27 +1325,21 @@ function getProxiesForOutcome($conn, $outcome_id)
         function updateSavedDataDisplay() {
             // อ่านข้อมูลจากฟอร์ม (รองรับทั้ง input และ textarea)
             const benefitDetail = document.querySelector(`textarea[name="benefit_detail_1"]`).value || '-';
-            const benefitNote = document.querySelector(`input[name="benefit_note_1"]`).value || '0';
+            const benefitNote = document.querySelector(`textarea[name="benefit_note_1"]`).value || '0';
             const attribution = document.querySelector(`input[name="attribution_1"]`).value || '0';
             const deadweight = document.querySelector(`input[name="deadweight_1"]`).value || '0';
             const displacement = document.querySelector(`input[name="displacement_1"]`).value || '0';
 
             // คำนวณสัดส่วนผลกระทบ
             const impact = 1 - (parseFloat(attribution) + parseFloat(deadweight) + parseFloat(displacement)) / 100;
-            const impactPercentage = Math.max(0, impact * 100).toFixed(1);
-
-            // ฟอร์แมตจำนวนเงินให้มีคอมมา
-            const formattedAmount = parseFloat(benefitNote).toLocaleString('th-TH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+            const impactPercentage = Math.max(0, impact * 100).toFixed(2);
 
             // อัปเดตข้อมูลในตาราง
             document.getElementById('savedBenefitDetail').textContent = benefitDetail;
-            document.getElementById('savedBenefitNote').textContent = formattedAmount + ' บาท';
-            document.getElementById('savedAttribution').textContent = attribution + '%';
-            document.getElementById('savedDeadweight').textContent = deadweight + '%';
-            document.getElementById('savedDisplacement').textContent = displacement + '%';
+            document.getElementById('savedBenefitNote').textContent = formatBenefitNote(benefitNote);
+            document.getElementById('savedAttribution').textContent = parseFloat(attribution).toFixed(2) + '%';
+            document.getElementById('savedDeadweight').textContent = parseFloat(deadweight).toFixed(2) + '%';
+            document.getElementById('savedDisplacement').textContent = parseFloat(displacement).toFixed(2) + '%';
             document.getElementById('savedResult').textContent = impactPercentage + '%';
         }
 
@@ -1522,7 +1474,7 @@ function getProxiesForOutcome($conn, $outcome_id)
                 // ดึงข้อมูลจากฟอร์ม (รองรับทั้ง input และ textarea)
                 const benefitDetailInput = document.querySelector(`textarea[name="benefit_detail_${rowNumber}"]`);
                 const beneficiaryInput = document.querySelector(`textarea[name="beneficiary_${rowNumber}"]`);
-                const benefitNoteInput = document.querySelector(`input[name="benefit_note_${rowNumber}"]`);
+                const benefitNoteInput = document.querySelector(`textarea[name="benefit_note_${rowNumber}"]`);
                 const attributionInput = document.querySelector(`input[name="attribution_${rowNumber}"]`);
                 const deadweightInput = document.querySelector(`input[name="deadweight_${rowNumber}"]`);
                 const displacementInput = document.querySelector(`input[name="displacement_${rowNumber}"]`);
@@ -1530,8 +1482,8 @@ function getProxiesForOutcome($conn, $outcome_id)
                 if (benefitDetailInput && attributionInput && deadweightInput && displacementInput) {
                     const benefitDetail = benefitDetailInput.value.trim();
                     const beneficiary = beneficiaryInput ? beneficiaryInput.value.trim() : '';
-                    // แปลงจำนวนเงินที่มีคอมมากลับเป็นตัวเลขล้วน (ฟังก์ชัน confirmOutcomeSelection)
-                    const benefitNote = benefitNoteInput.value.replace(/,/g, '').trim();
+                    // รับข้อมูล benefit_note โดยตรง (ไม่แปลงเป็นตัวเลข)
+                    const benefitNote = benefitNoteInput.value.trim();
                     const attribution = attributionInput.value;
                     const deadweight = deadweightInput.value;
                     const displacement = displacementInput.value;
@@ -1712,7 +1664,7 @@ function getProxiesForOutcome($conn, $outcome_id)
             const displacement = parseFloat(document.querySelector(`input[name="displacement_${rowNumber}"]`).value) || 0;
 
             const impact = 1 - (attribution + deadweight + displacement) / 100;
-            const impactPercentage = Math.max(0, impact * 100).toFixed(1);
+            const impactPercentage = Math.max(0, impact * 100).toFixed(2);
 
             document.getElementById(`result_${rowNumber}`).textContent = impactPercentage + '%';
         }
@@ -1740,22 +1692,16 @@ function getProxiesForOutcome($conn, $outcome_id)
                         placeholder="ระบุผู้ใช้ประโยชน์..."></textarea>
                 </td>
                 <td>
-                    <input type="text" class="form-control number-only"
+                    <textarea class="form-control" rows="3"
                         name="benefit_note_${benefitRowCount}"
-                        placeholder="กรอกจำนวนเงิน (บาท/ปี)"
-                        pattern="[0-9,]+"
-                        title="กรุณาใส่ตัวเลขเท่านั้น">
+                        placeholder="กรอกจำนวนเงิน (บาท/ปี) หรือข้อความ"></textarea>
                 </td>
             `;
             benefitTableBody.appendChild(newBenefitRow);
 
             // เพิ่ม event listener สำหรับ input field จำนวนเงินที่สร้างใหม่
-            const newMoneyInput = newBenefitRow.querySelector(`input[name="benefit_note_${benefitRowCount}"]`);
-            if (newMoneyInput) {
-                newMoneyInput.addEventListener('blur', function() {
-                    formatNumberInput(this);
-                });
-            }
+            const newMoneyInput = newBenefitRow.querySelector(`textarea[name="benefit_note_${benefitRowCount}"]`);
+            // หมายเหตุ: ลบการจัดรูปแบบตัวเลขอัตโนมัติ เพื่อให้รองรับข้อความ
 
             // เพิ่มแถวในตารางสัดส่วนผลกระทบ
             const impactTableBody = document.querySelector('#impactTable tbody');
@@ -1766,25 +1712,25 @@ function getProxiesForOutcome($conn, $outcome_id)
                     <input type="number" class="form-control form-control-sm"
                         name="attribution_${benefitRowCount}"
                         step="0.01" min="0" max="100"
-                        value="0"
+                        value="0.00"
                         onchange="calculateImpact(${benefitRowCount})">
                 </td>
                 <td>
                     <input type="number" class="form-control form-control-sm"
                         name="deadweight_${benefitRowCount}"
                         step="0.01" min="0" max="100"
-                        value="0"
+                        value="0.00"
                         onchange="calculateImpact(${benefitRowCount})">
                 </td>
                 <td>
                     <input type="number" class="form-control form-control-sm"
                         name="displacement_${benefitRowCount}"
                         step="0.01" min="0" max="100"
-                        value="0"
+                        value="0.00"
                         onchange="calculateImpact(${benefitRowCount})">
                 </td>
                 <td class="text-center">
-                    <span id="result_${benefitRowCount}" class="fw-bold text-success">100%</span>
+                    <span id="result_${benefitRowCount}" class="fw-bold text-success">100.00%</span>
                 </td>
             `;
             impactTableBody.appendChild(newImpactRow);

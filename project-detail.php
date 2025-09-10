@@ -312,9 +312,8 @@ function formatThaiDate($date)
                                     <?php foreach ($outputs as $output): ?>
                                         <div class="list-group-item border-0 ps-0">
                                             <i class="fas fa-check-circle text-success me-2"></i>
-                                            <strong><?php echo htmlspecialchars($output['output_name']); ?></strong>
                                             <?php if (!empty($output['output_details'])): ?>
-                                                <br><small class="text-muted"><?php echo htmlspecialchars($output['output_details']); ?></small>
+                                                <?php echo htmlspecialchars($output['output_details']); ?>
                                             <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>
@@ -329,9 +328,8 @@ function formatThaiDate($date)
                                     <?php foreach ($outcomes as $outcome): ?>
                                         <div class="list-group-item border-0 ps-0">
                                             <i class="fas fa-check-circle text-success me-2"></i>
-                                            <strong><?php echo htmlspecialchars($outcome['outcome_name']); ?></strong>
                                             <?php if (!empty($outcome['outcome_details'])): ?>
-                                                <br><small class="text-muted"><?php echo htmlspecialchars($outcome['outcome_details']); ?></small>
+                                                <?php echo htmlspecialchars($outcome['outcome_details']); ?>
                                             <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>

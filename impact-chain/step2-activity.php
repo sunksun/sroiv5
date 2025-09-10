@@ -78,7 +78,7 @@ if (!empty($strategy_ids)) {
                          FROM activities a 
                          JOIN strategies s ON a.strategy_id = s.strategy_id 
                          WHERE a.strategy_id IN ($strategy_ids_str) 
-                         ORDER BY a.activity_code ASC";
+                         ORDER BY CAST(a.activity_code AS UNSIGNED) ASC";
     $activities_result = mysqli_query($conn, $activities_query);
     $activities = mysqli_fetch_all($activities_result, MYSQLI_ASSOC);
 }

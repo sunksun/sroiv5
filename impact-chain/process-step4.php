@@ -228,8 +228,8 @@ try {
         $insert_ratio_query = "INSERT INTO project_impact_ratios (project_id, chain_sequence, year, benefit_number, benefit_note) VALUES (?, ?, ?, ?, ?)";
         $insert_ratio_stmt = mysqli_prepare($conn, $insert_ratio_query);
         $benefit_number = 1; // ค่าเริ่มต้นสำหรับการบันทึกข้อมูลสัดส่วนผลกระทบ
-        $benefit_note = 0;   // ค่าเริ่มต้นสำหรับจำนวนเงิน (บาท/ปี)
-        mysqli_stmt_bind_param($insert_ratio_stmt, 'iisii', $project_id, $chain_sequence, $evaluation_year, $benefit_number, $benefit_note);
+        $benefit_note = '';  // ค่าเริ่มต้นเป็นข้อความว่าง (รองรับทั้งตัวเลขและข้อความ)
+        mysqli_stmt_bind_param($insert_ratio_stmt, 'iisis', $project_id, $chain_sequence, $evaluation_year, $benefit_number, $benefit_note);
         
         if (!mysqli_stmt_execute($insert_ratio_stmt)) {
             throw new Exception("เกิดข้อผิดพลาดในการบันทึกข้อมูลสัดส่วนผลกระทบ");

@@ -310,13 +310,13 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
 
                 $total_present_costs = array_sum($present_costs_by_year);
                 $total_present_benefits = array_sum($present_benefits_by_year);
-                
+
                 // คำนวณ NPV ใหม่ = ผลประโยชน์ปัจจุบันสุทธิ (Total Present Benefit) หลังหักลบกรณีฐาน (Base Case Impact)
                 $npv = 0;
                 foreach ($available_years as $year_index => $year) {
                     $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
                     $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
-                    
+
                     // คำนวณ Present Base Case Impact แต่ละปี
                     $year_present_base_case = 0;
                     foreach ($project_benefits as $benefit_number => $benefit) {
@@ -333,19 +333,19 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                         $attribution = $benefit_amount * ($attribution_rate / 100);
                         $deadweight = $benefit_amount * ($deadweight_rate / 100);
                         $displacement = $benefit_amount * ($displacement_rate / 100);
-                        
+
                         // คำนวณ Present Value ของ Base Case Impact
                         $impact_amount = $attribution + $deadweight + $displacement;
                         $present_impact = $impact_amount / pow(1 + ($saved_discount_rate / 100), $year_index);
 
                         $year_present_base_case += $present_impact;
                     }
-                    
+
                     // มูลค่าปัจจุบัน (Present Value) = Present Benefit - Present Cost - Present Base Case Impact
                     $year_present_value = $present_benefit - $present_cost - $year_present_base_case;
                     $npv += $year_present_value;
                 }
-                
+
                 // คำนวณ Base Case Impact จากข้อมูลจริงในฐานข้อมูล (ย้ายขึ้นมาก่อน)
                 $base_case_impact = 0;
                 foreach ($project_benefits as $benefit_number => $benefit) {
@@ -374,10 +374,10 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                 }
 
                 $net_social_benefit = $total_present_benefits - $base_case_impact;
-                
+
                 // คำนวณ SROI ใหม่ = (Total Present Benefit - Present Base Case Impact) ÷ Total Present Cost
                 $sroi_ratio = ($total_present_costs > 0) ? ($net_social_benefit / $total_present_costs) : 0;
-                
+
                 $sensitivity = calculateSensitivityAnalysis($sroi_ratio, 0.2);
 
                 // คำนวณ IRR (Internal Rate of Return) โดยใช้ฟังก์ชันที่แท้จริง
@@ -385,7 +385,7 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                 foreach ($available_years as $year_index => $year) {
                     $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
                     $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
-                    
+
                     // คำนวณ Present Base Case Impact แต่ละปี
                     $year_present_base_case = 0;
                     foreach ($project_benefits as $benefit_number => $benefit) {
@@ -402,19 +402,19 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                         $attribution = $benefit_amount * ($attribution_rate / 100);
                         $deadweight = $benefit_amount * ($deadweight_rate / 100);
                         $displacement = $benefit_amount * ($displacement_rate / 100);
-                        
+
                         // คำนวณ Present Value ของ Base Case Impact (แต่ใช้อัตราคิดลด 0% สำหรับ IRR)
                         $impact_amount = $attribution + $deadweight + $displacement;
                         $year_present_base_case += $impact_amount; // ไม่ discount เพื่อใช้ในการคำนวณ IRR
                     }
-                    
+
                     // สร้าง cash flow แต่ละปี (Net Cash Flow = Benefit - Cost - Base Case Impact)
                     $benefit_nominal = $benefits_by_year[$year['year_be']] ?? 0;
                     $cost_nominal = $costs_by_year[$year['year_be']] ?? 0;
                     $net_cash_flow = $benefit_nominal - $cost_nominal - $year_present_base_case;
                     $cash_flows[] = $net_cash_flow;
                 }
-                
+
                 $calculated_irr = calculateIRR($cash_flows);
                 $irr = ($calculated_irr !== null) ? number_format($calculated_irr * 100, 2) . '%' : 'N/A';
                 ?>
@@ -485,146 +485,6 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                         <div class="metric-card">
                             <div class="metric-value"><?php echo formatNumber($total_present_benefits, 2); ?></div>
                             <div class="metric-label">รวมผลประโยชน์ปัจจุบันสุทธิ (Total Present Benefit) (บาท)</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Total Summary Section -->
-                <div class="section">
-                    <h2 class="section-title">ผลประโยชน์รวม (Total Benefit) - ต้นทุนรวม (Total Cost) - ผลกระทบกรณีฐาน (Base Case Impact)</h2>
-
-                    <!-- 1. ผลประโยชน์รวม - ต้นทุนรวม - ผลกระทบกรณีฐาน -->
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>รายการ</th>
-                                <?php foreach ($available_years as $year): ?>
-                                    <th><?php echo htmlspecialchars($year['year_display']); ?></th>
-                                <?php endforeach; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>ผลประโยชน์รวม (Total Benefit) - ต้นทุนรวม (Total Cost) - ผลกระทบกรณีฐาน (Base Case Impact)</td>
-                                <?php foreach ($available_years as $year_index => $year): ?>
-                                    <td>
-                                        <?php
-                                        // คำนวณตามสูตร: รวม (Benefit) - รวมต้นทุนทั้งหมด - รวม (Base Case Impact)
-                                        $benefit_amount = $benefits_by_year[$year['year_be']] ?? 0;
-                                        $cost_amount = $costs_by_year[$year['year_be']] ?? 0;
-                                        
-                                        // คำนวณ Base Case Impact แต่ละปี
-                                        $year_base_case_total = 0;
-                                        foreach ($project_benefits as $benefit_number => $benefit) {
-                                            $benefit_value = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
-                                                ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
-
-                                            $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                                ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
-                                            $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                                ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
-                                            $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                                ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
-
-                                            $attribution = $benefit_value * ($attribution_rate / 100);
-                                            $deadweight = $benefit_value * ($deadweight_rate / 100);
-                                            $displacement = $benefit_value * ($displacement_rate / 100);
-
-                                            $year_base_case_total += ($attribution + $deadweight + $displacement);
-                                        }
-                                        
-                                        // สูตร: รวม (Benefit) - รวมต้นทุนทั้งหมด - รวม (Base Case Impact)
-                                        $result = $benefit_amount - $cost_amount - $year_base_case_total;
-                                        echo formatNumber($result, 2);
-                                        ?>
-                                    </td>
-                                <?php endforeach; ?>
-                            </tr>
-                            <tr>
-                                <td>มูลค่าปัจจุบัน (Present Value)</td>
-                                <?php foreach ($available_years as $year_index => $year): ?>
-                                    <td>
-                                        <?php
-                                        // คำนวณตามสูตร: รวมผลประโยชน์ปัจจุบันสุทธิ - ต้นทุนปัจจุบันสุทธิ - ผลกระทบกรณีฐานรวมปัจจุบัน
-                                        $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
-                                        $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
-                                        
-                                        // คำนวณ Present Base Case Impact แต่ละปี
-                                        $year_present_base_case = 0;
-                                        foreach ($project_benefits as $benefit_number => $benefit) {
-                                            $benefit_amount = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
-                                                ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
-
-                                            $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                                ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
-                                            $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                                ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
-                                            $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                                ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
-
-                                            $attribution = $benefit_amount * ($attribution_rate / 100);
-                                            $deadweight = $benefit_amount * ($deadweight_rate / 100);
-                                            $displacement = $benefit_amount * ($displacement_rate / 100);
-                                            
-                                            // คำนวณ Present Value ของ Base Case Impact
-                                            $impact_amount = $attribution + $deadweight + $displacement;
-                                            $present_impact = $impact_amount / pow(1 + ($saved_discount_rate / 100), $year_index);
-
-                                            $year_present_base_case += $present_impact;
-                                        }
-                                        
-                                        // สูตร: รวมผลประโยชน์ปัจจุบันสุทธิ - ต้นทุนปัจจุบันสุทธิ - ผลกระทบกรณีฐานรวมปัจจุบัน
-                                        $result = $present_benefit - $present_cost - $year_present_base_case;
-                                        echo formatNumber($result, 2);
-                                        ?>
-                                    </td>
-                                <?php endforeach; ?>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <div class="metric-cards">
-                        <div class="metric-card">
-                            <div class="metric-value">
-                                <?php 
-                                // คำนวณผลรวมมูลค่าปัจจุบัน (Present Value) ในแต่ละปี
-                                $total_present_value = 0;
-                                foreach ($available_years as $year_index => $year) {
-                                    $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
-                                    $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
-                                    
-                                    // คำนวณ Present Base Case Impact แต่ละปี
-                                    $year_present_base_case = 0;
-                                    foreach ($project_benefits as $benefit_number => $benefit) {
-                                        $benefit_amount = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
-                                            ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
-
-                                        $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                            ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
-                                        $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                            ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
-                                        $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
-                                            ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
-
-                                        $attribution = $benefit_amount * ($attribution_rate / 100);
-                                        $deadweight = $benefit_amount * ($deadweight_rate / 100);
-                                        $displacement = $benefit_amount * ($displacement_rate / 100);
-                                        
-                                        // คำนวณ Present Value ของ Base Case Impact
-                                        $impact_amount = $attribution + $deadweight + $displacement;
-                                        $present_impact = $impact_amount / pow(1 + ($saved_discount_rate / 100), $year_index);
-
-                                        $year_present_base_case += $present_impact;
-                                    }
-                                    
-                                    // มูลค่าปัจจุบัน (Present Value) = Present Benefit - Present Cost - Present Base Case Impact
-                                    $year_present_value = $present_benefit - $present_cost - $year_present_base_case;
-                                    $total_present_value += $year_present_value;
-                                }
-                                echo formatNumber($total_present_value, 2); 
-                                ?>
-                            </div>
-                            <div class="metric-label">ผลประโยชน์ปัจจุบันสุทธิ (Total Present Benefit) หลังหักลบกรณีฐาน (Base Case Impact)</div>
                         </div>
                     </div>
                 </div>
@@ -807,6 +667,146 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                         <div class="metric-card">
                             <div class="metric-value"><?php echo formatNumber($base_case_impact, 2); ?></div>
                             <div class="metric-label">ผลกระทบกรณีฐานรวมปัจจุบัน (Present Base Case Impact) บาท</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Summary Section -->
+                <div class="section">
+                    <h2 class="section-title">ผลประโยชน์รวม (Total Benefit) - ต้นทุนรวม (Total Cost) - ผลกระทบกรณีฐาน (Base Case Impact)</h2>
+
+                    <!-- 1. ผลประโยชน์รวม - ต้นทุนรวม - ผลกระทบกรณีฐาน -->
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>รายการ</th>
+                                <?php foreach ($available_years as $year): ?>
+                                    <th><?php echo htmlspecialchars($year['year_display']); ?></th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ผลประโยชน์รวม (Total Benefit) - ต้นทุนรวม (Total Cost) - ผลกระทบกรณีฐาน (Base Case Impact)</td>
+                                <?php foreach ($available_years as $year_index => $year): ?>
+                                    <td>
+                                        <?php
+                                        // คำนวณตามสูตร: รวม (Benefit) - รวมต้นทุนทั้งหมด - รวม (Base Case Impact)
+                                        $benefit_amount = $benefits_by_year[$year['year_be']] ?? 0;
+                                        $cost_amount = $costs_by_year[$year['year_be']] ?? 0;
+
+                                        // คำนวณ Base Case Impact แต่ละปี
+                                        $year_base_case_total = 0;
+                                        foreach ($project_benefits as $benefit_number => $benefit) {
+                                            $benefit_value = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
+                                                ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
+
+                                            $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                                ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
+                                            $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                                ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
+                                            $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                                ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
+
+                                            $attribution = $benefit_value * ($attribution_rate / 100);
+                                            $deadweight = $benefit_value * ($deadweight_rate / 100);
+                                            $displacement = $benefit_value * ($displacement_rate / 100);
+
+                                            $year_base_case_total += ($attribution + $deadweight + $displacement);
+                                        }
+
+                                        // สูตร: รวม (Benefit) - รวมต้นทุนทั้งหมด - รวม (Base Case Impact)
+                                        $result = $benefit_amount - $cost_amount - $year_base_case_total;
+                                        echo formatNumber($result, 2);
+                                        ?>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                            <tr>
+                                <td>มูลค่าปัจจุบัน (Present Value)</td>
+                                <?php foreach ($available_years as $year_index => $year): ?>
+                                    <td>
+                                        <?php
+                                        // คำนวณตามสูตร: รวมผลประโยชน์ปัจจุบันสุทธิ - ต้นทุนปัจจุบันสุทธิ - ผลกระทบกรณีฐานรวมปัจจุบัน
+                                        $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
+                                        $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
+
+                                        // คำนวณ Present Base Case Impact แต่ละปี
+                                        $year_present_base_case = 0;
+                                        foreach ($project_benefits as $benefit_number => $benefit) {
+                                            $benefit_amount = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
+                                                ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
+
+                                            $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                                ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
+                                            $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                                ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
+                                            $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                                ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
+
+                                            $attribution = $benefit_amount * ($attribution_rate / 100);
+                                            $deadweight = $benefit_amount * ($deadweight_rate / 100);
+                                            $displacement = $benefit_amount * ($displacement_rate / 100);
+
+                                            // คำนวณ Present Value ของ Base Case Impact
+                                            $impact_amount = $attribution + $deadweight + $displacement;
+                                            $present_impact = $impact_amount / pow(1 + ($saved_discount_rate / 100), $year_index);
+
+                                            $year_present_base_case += $present_impact;
+                                        }
+
+                                        // สูตร: รวมผลประโยชน์ปัจจุบันสุทธิ - ต้นทุนปัจจุบันสุทธิ - ผลกระทบกรณีฐานรวมปัจจุบัน
+                                        $result = $present_benefit - $present_cost - $year_present_base_case;
+                                        echo formatNumber($result, 2);
+                                        ?>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="metric-cards">
+                        <div class="metric-card">
+                            <div class="metric-value">
+                                <?php
+                                // คำนวณผลรวมมูลค่าปัจจุบัน (Present Value) ในแต่ละปี
+                                $total_present_value = 0;
+                                foreach ($available_years as $year_index => $year) {
+                                    $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
+                                    $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
+
+                                    // คำนวณ Present Base Case Impact แต่ละปี
+                                    $year_present_base_case = 0;
+                                    foreach ($project_benefits as $benefit_number => $benefit) {
+                                        $benefit_amount = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
+                                            ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
+
+                                        $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                            ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
+                                        $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                            ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
+                                        $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                                            ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
+
+                                        $attribution = $benefit_amount * ($attribution_rate / 100);
+                                        $deadweight = $benefit_amount * ($deadweight_rate / 100);
+                                        $displacement = $benefit_amount * ($displacement_rate / 100);
+
+                                        // คำนวณ Present Value ของ Base Case Impact
+                                        $impact_amount = $attribution + $deadweight + $displacement;
+                                        $present_impact = $impact_amount / pow(1 + ($saved_discount_rate / 100), $year_index);
+
+                                        $year_present_base_case += $present_impact;
+                                    }
+
+                                    // มูลค่าปัจจุบัน (Present Value) = Present Benefit - Present Cost - Present Base Case Impact
+                                    $year_present_value = $present_benefit - $present_cost - $year_present_base_case;
+                                    $total_present_value += $year_present_value;
+                                }
+                                echo formatNumber($total_present_value, 2);
+                                ?>
+                            </div>
+                            <div class="metric-label">ผลประโยชน์ปัจจุบันสุทธิ (Total Present Benefit) หลังหักลบกรณีฐาน (Base Case Impact)</div>
                         </div>
                     </div>
                 </div>

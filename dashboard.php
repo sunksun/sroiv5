@@ -44,14 +44,17 @@ $stats_result = mysqli_stmt_get_result($stats_stmt);
 $user_stats = mysqli_fetch_assoc($stats_result);
 mysqli_stmt_close($stats_stmt);
 
-// ดึงจำนวน Impact Chain ทั้งหมด
-$chain_query = "SELECT 
-                    (SELECT COUNT(*) FROM project_strategies WHERE project_id IN (SELECT id FROM projects WHERE created_by = ?)) +
-                    (SELECT COUNT(*) FROM project_activities WHERE project_id IN (SELECT id FROM projects WHERE created_by = ?)) +
-                    (SELECT COUNT(*) FROM project_outputs WHERE project_id IN (SELECT id FROM projects WHERE created_by = ?))
-                    as total_chains";
+// ดึงจำนวน Impact Chain ทั้งหมด (นับ chain_sequence ที่ไม่ซ้ำกัน)
+$chain_query = "SELECT COUNT(DISTINCT CONCAT(project_id, '-', chain_sequence)) as total_chains 
+                FROM (
+                    SELECT project_id, chain_sequence FROM project_outcomes 
+                    WHERE project_id IN (SELECT id FROM projects WHERE created_by = ?)
+                    UNION 
+                    SELECT project_id, chain_sequence FROM project_impact_ratios 
+                    WHERE project_id IN (SELECT id FROM projects WHERE created_by = ?)
+                ) as all_chains";
 $chain_stmt = mysqli_prepare($conn, $chain_query);
-mysqli_stmt_bind_param($chain_stmt, 'sss', $user_id, $user_id, $user_id);
+mysqli_stmt_bind_param($chain_stmt, 'ss', $user_id, $user_id);
 mysqli_stmt_execute($chain_stmt);
 $chain_result = mysqli_stmt_get_result($chain_stmt);
 $chain_stats = mysqli_fetch_assoc($chain_result);
