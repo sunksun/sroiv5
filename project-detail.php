@@ -276,7 +276,7 @@ function formatThaiDate($date)
                 <?php if (!empty($strategies) || !empty($activities) || !empty($outputs) || !empty($outcomes)): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="fas fa-link text-primary"></i> Impact Chain</h5>
-                        
+
                         <?php if (!empty($strategies)): ?>
                             <div class="mb-4">
                                 <h6 class="text-primary"><i class="fas fa-chess-king"></i> กลยุทธ์ที่เลือก</h6>
@@ -351,10 +351,6 @@ function formatThaiDate($date)
                         <strong>อัปเดตล่าสุด:</strong><br>
                         <span class="text-muted"><?php echo formatThaiDate($project['updated_at']); ?></span>
                     </div>
-                    <div class="mb-3">
-                        <strong>สร้างโดย:</strong><br>
-                        <span class="text-muted"><?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
-                    </div>
                 </div>
 
                 <div class="detail-section">
@@ -403,7 +399,7 @@ function formatThaiDate($date)
                 <?php if (!empty($costs) || !empty($impact_ratios) || !empty($with_without)): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="fas fa-chart-line text-primary"></i> Impact Pathway Analysis</h5>
-                        
+
                         <?php if (!empty($costs)): ?>
                             <div class="mb-4">
                                 <h6 class="text-primary"><i class="fas fa-money-bill-wave"></i> ต้นทุนโครงการ</h6>

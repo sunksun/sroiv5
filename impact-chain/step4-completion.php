@@ -308,10 +308,10 @@ if ($project_id > 0) {
                             <h6><span class="badge bg-warning">Step 2</span> กิจกรรมที่เลือก (<?php echo count($project_activities); ?> รายการ)</h6>
                             <?php if (!empty($project_activities)): ?>
                                 <div class="row">
-                                    <?php foreach ($project_activities as $activity): ?>
+                                    <?php foreach ($project_activities as $index => $activity): ?>
                                         <div class="col-md-6 mb-2">
                                             <div class="p-2 bg-light rounded">
-                                                <strong><?php echo htmlspecialchars($activity['activity_code']); ?></strong>:
+                                                <strong><?php echo ($index + 1); ?></strong>.
                                                 <?php echo htmlspecialchars($activity['activity_name']); ?>
                                                 <?php if (!empty($activity['activity_description'])): ?>
                                                     <br><small class="text-muted"><?php echo htmlspecialchars($activity['activity_description']); ?></small>
@@ -330,12 +330,12 @@ if ($project_id > 0) {
                             <h6><span class="badge bg-info">Step 3</span> ผลผลิตที่เลือก (<?php echo count($project_outputs); ?> รายการ)</h6>
                             <?php if (!empty($project_outputs)): ?>
                                 <div class="row">
-                                    <?php foreach ($project_outputs as $output): ?>
+                                    <?php foreach ($project_outputs as $index => $output): ?>
                                         <div class="col-md-6 mb-2">
                                             <div class="p-2 bg-light rounded">
-                                                <strong><?php echo htmlspecialchars($output['output_sequence']); ?></strong>
+                                                <strong><?php echo ($index + 1); ?></strong>.
                                                 <?php if (!empty($output['project_output_details'])): ?>
-                                                    <br><small class="text-success">รายละเอียด: <?php echo htmlspecialchars($output['project_output_details']); ?></small>
+                                                    <?php echo htmlspecialchars($output['project_output_details']); ?>
                                                 <?php endif; ?>
                                                 <br><small class="text-muted">กิจกรรม: <?php echo htmlspecialchars($output['activity_name']); ?></small>
                                             </div>
@@ -352,12 +352,12 @@ if ($project_id > 0) {
                             <h6><span class="badge bg-success">Step 4</span> ผลลัพธ์ที่เลือก (<?php echo count($project_outcomes); ?> รายการ)</h6>
                             <?php if (!empty($project_outcomes)): ?>
                                 <div class="row">
-                                    <?php foreach ($project_outcomes as $outcome): ?>
+                                    <?php foreach ($project_outcomes as $index => $outcome): ?>
                                         <div class="col-md-6 mb-2">
                                             <div class="p-2 bg-light rounded">
-                                                <strong><?php echo htmlspecialchars($outcome['outcome_sequence']); ?></strong>
+                                                <strong><?php echo ($index + 1); ?></strong>.
                                                 <?php if (!empty($outcome['project_outcome_details'])): ?>
-                                                    <br><small class="text-success">รายละเอียด: <?php echo htmlspecialchars($outcome['project_outcome_details']); ?></small>
+                                                    <?php echo htmlspecialchars($outcome['project_outcome_details']); ?>
                                                 <?php endif; ?>
                                                 <br><small class="text-muted">กิจกรรม: <?php echo htmlspecialchars($outcome['activity_name']); ?></small>
                                             </div>

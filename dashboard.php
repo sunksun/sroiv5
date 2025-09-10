@@ -68,42 +68,6 @@ $user_stats = $user_stats ?? [
     'total_budget' => 0
 ];
 
-// ดึงกิจกรรมล่าสุดของผู้ใช้
-$activity_query = "
-    SELECT 
-        'project_created' as type,
-        CONCAT('สร้างโครงการ \"', LEFT(name, 30), '...\"') as text,
-        created_at as timestamp,
-        '➕' as icon
-    FROM projects 
-    WHERE created_by = ?
-    
-    UNION ALL
-    
-    SELECT 
-        'project_updated' as type,
-        CONCAT('อัปเดตโครงการ \"', LEFT(name, 30), '...\"') as text,
-        updated_at as timestamp,
-        '📊' as icon
-    FROM projects 
-    WHERE created_by = ? AND updated_at > created_at
-    
-    ORDER BY timestamp DESC 
-    LIMIT 5
-";
-
-$activity_stmt = mysqli_prepare($conn, $activity_query);
-mysqli_stmt_bind_param($activity_stmt, 'ss', $user_id, $user_id);
-mysqli_stmt_execute($activity_stmt);
-$activities_result = mysqli_stmt_get_result($activity_stmt);
-$recent_activities = [];
-while ($row = mysqli_fetch_assoc($activities_result)) {
-    $recent_activities[] = [
-        'type' => $row['type'],
-        'text' => $row['text'],
-        'icon' => $row['icon']
-    ];
-}
 
 // ฟังก์ชันแปลงสถานะ
 function getStatusText($status)
@@ -626,52 +590,6 @@ function formatThaiDate($date)
             color: var(--text-muted);
         }
 
-        /* Recent Activity */
-        .activity-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
-            transition: background 0.3s ease;
-        }
-
-        .activity-item:hover {
-            background: var(--light-bg);
-        }
-
-        .activity-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            color: white;
-            background: linear-gradient(45deg, var(--info-color), #44a08d);
-            flex-shrink: 0;
-        }
-
-        .activity-content {
-            flex: 1;
-        }
-
-        .activity-text {
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .activity-time {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
 
         /* Loading Animation */
         .loading {
@@ -1012,20 +930,6 @@ function formatThaiDate($date)
                     </div>
                 </div>
 
-                <!-- Recent Activity -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            🕒 กิจกรรมล่าสุด
-                        </h3>
-                    </div>
-                    <div class="activity-list" id="recentActivity">
-                        <!-- Activities will be loaded here -->
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -1051,42 +955,10 @@ function formatThaiDate($date)
     </div>
 
     <script>
-        // ข้อมูลกิจกรรมล่าสุดจากฐานข้อมูล
-        const recentActivities = <?php echo json_encode($recent_activities); ?>;
-
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            loadRecentActivity();
+            // Dashboard initialization
         });
-
-        function loadRecentActivity() {
-            const container = document.getElementById('recentActivity');
-            container.innerHTML = '';
-
-            if (recentActivities.length === 0) {
-                container.innerHTML = '<div class="no-activity">ยังไม่มีกิจกรรม</div>';
-                return;
-            }
-
-            recentActivities.forEach(activity => {
-                const activityItem = createActivityItem(activity);
-                container.appendChild(activityItem);
-            });
-        }
-
-        function createActivityItem(activity) {
-            const item = document.createElement('div');
-            item.className = 'activity-item';
-
-            item.innerHTML = `
-                <div class="activity-icon">${activity.icon}</div>
-                <div class="activity-content">
-                    <div class="activity-text">${activity.text}</div>
-                </div>
-            `;
-
-            return item;
-        }
 
         // Navigation functions
         function openProject(projectId) {
@@ -1137,36 +1009,6 @@ function formatThaiDate($date)
             }, 1000);
         }
 
-        // Real-time updates simulation
-        function simulateRealTimeUpdates() {
-            setInterval(() => {
-                // Simulate notification badge update
-                const badge = document.querySelector('.notification-badge::after');
-                // Could update notification count here
-
-                // Simulate new activity
-                if (Math.random() > 0.95) { // 5% chance every 5 seconds
-                    const newActivity = {
-                        type: 'system_update',
-                        text: 'อัพเดทข้อมูลโครงการอัตโนมัติ',
-                        time: 'เมื่อสักครู่',
-                        icon: '🔄'
-                    };
-
-                    const container = document.getElementById('recentActivity');
-                    const newItem = createActivityItem(newActivity);
-                    container.insertBefore(newItem, container.firstChild);
-
-                    // Remove last item if more than 4 activities
-                    if (container.children.length > 4) {
-                        container.removeChild(container.lastChild);
-                    }
-                }
-            }, 5000);
-        }
-
-        // Start real-time updates
-        simulateRealTimeUpdates();
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {

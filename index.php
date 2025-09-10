@@ -354,7 +354,7 @@
                 <div class="col-lg-6">
                     <div class="hero-content">
                         <h1 class="hero-title fade-in">
-                            SROI Version 5<br>
+                            SROI<br>
                             <span style="color: #ffd700;">สำหรับโครงการยุทธศาสตร์<br>มหาวิทยาลัยราชภัฏเลย</span>
                         </h1>
                         <p class="hero-subtitle fade-in">

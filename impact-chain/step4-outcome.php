@@ -1566,13 +1566,6 @@ function getProxiesForOutcome($conn, $outcome_id)
                 return;
             }
 
-            // ตรวจสอบว่าได้เลือกปีหรือไม่
-            const selectedYear = document.querySelector('input[name="evaluation_year"]:checked');
-            if (!selectedYear) {
-                alert('กรุณาเลือกปีที่ต้องการประเมิน');
-                return;
-            }
-
             // แสดง loading
             const saveBtn = document.querySelector('button[onclick="saveOutcomeDetails()"]');
             const originalText = saveBtn.innerHTML;
@@ -1584,7 +1577,6 @@ function getProxiesForOutcome($conn, $outcome_id)
             formData.append('project_id', document.querySelector('input[name="project_id"]').value);
             formData.append('selected_outcome', selectedRadio.value);
             formData.append('outcome_details', outcomeDetails);
-            formData.append('evaluation_year', selectedYear.value);
             formData.append('save_details_only', '1'); // เพิ่ม flag เพื่อบอกว่าเป็นการบันทึกรายละเอียดเท่านั้น
 
             // เพิ่ม chain_sequence

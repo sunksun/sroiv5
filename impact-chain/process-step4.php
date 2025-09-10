@@ -75,17 +75,8 @@ if ($project_id == 0) {
     exit;
 }
 
-// ตรวจสอบว่าได้เลือกปีที่ต้องการประเมินหรือไม่ (ยกเว้นกรณีที่ข้ามไปหน้า completion)
-if (empty($evaluation_year) && $selected_outcome != 0) {
-    if ($save_details_only) {
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false,
-            'message' => 'กรุณาเลือกปีที่ต้องการประเมิน'
-        ]);
-        exit;
-    }
-    
+// ตรวจสอบปีเฉพาะกรณีที่ไม่ใช่การบันทึกรายละเอียดเท่านั้น
+if (empty($evaluation_year) && $selected_outcome != 0 && !$save_details_only) {
     $_SESSION['error_message'] = "กรุณาเลือกปีที่ต้องการประเมิน";
     $step4_url = "step4-outcome.php?project_id=" . $project_id . "&chain_sequence=" . $chain_sequence;
     header("location: " . $step4_url);
@@ -221,27 +212,32 @@ try {
     
     error_log("process-step4.php: Checking existing ratio - project_id=$project_id, chain_sequence=$chain_sequence, has_existing=$has_existing_ratio, save_details_only=$save_details_only");
     
-    // สร้างแถวใหม่ใน project_impact_ratios หาก:
-    // 1. ไม่ใช่การบันทึกรายละเอียดเท่านั้น หรือ
-    // 2. ยังไม่มี record สำหรับ chain_sequence นี้
-    if (!$save_details_only || !$has_existing_ratio) {
-        $insert_ratio_query = "INSERT INTO project_impact_ratios (project_id, chain_sequence, year, benefit_number, benefit_note) VALUES (?, ?, ?, ?, ?)";
-        $insert_ratio_stmt = mysqli_prepare($conn, $insert_ratio_query);
-        $benefit_number = 1; // ค่าเริ่มต้นสำหรับการบันทึกข้อมูลสัดส่วนผลกระทบ
-        $benefit_note = '';  // ค่าเริ่มต้นเป็นข้อความว่าง (รองรับทั้งตัวเลขและข้อความ)
-        mysqli_stmt_bind_param($insert_ratio_stmt, 'iisis', $project_id, $chain_sequence, $evaluation_year, $benefit_number, $benefit_note);
-        
-        if (!mysqli_stmt_execute($insert_ratio_stmt)) {
-            throw new Exception("เกิดข้อผิดพลาดในการบันทึกข้อมูลสัดส่วนผลกระทบ");
+    // สร้างแถวใหม่ใน project_impact_ratios เฉพาะกรณีที่ไม่ใช่การบันทึกรายละเอียดเท่านั้น
+    if (!$save_details_only) {
+        // ตรวจสอบว่ามี record อยู่แล้วหรือไม่
+        if (!$has_existing_ratio) {
+            $insert_ratio_query = "INSERT INTO project_impact_ratios (project_id, chain_sequence, year, benefit_number, benefit_note) VALUES (?, ?, ?, ?, ?)";
+            $insert_ratio_stmt = mysqli_prepare($conn, $insert_ratio_query);
+            $benefit_number = 1; // ค่าเริ่มต้นสำหรับการบันทึกข้อมูลสัดส่วนผลกระทบ
+            $benefit_note = '';  // ค่าเริ่มต้นเป็นข้อความว่าง (รองรับทั้งตัวเลขและข้อความ)
+            mysqli_stmt_bind_param($insert_ratio_stmt, 'iisis', $project_id, $chain_sequence, $evaluation_year, $benefit_number, $benefit_note);
+            
+            if (!mysqli_stmt_execute($insert_ratio_stmt)) {
+                throw new Exception("เกิดข้อผิดพลาดในการบันทึกข้อมูลสัดส่วนผลกระทบ");
+            }
+            mysqli_stmt_close($insert_ratio_stmt);
+            error_log("process-step4.php: Created new project_impact_ratios record for chain_sequence=$chain_sequence");
+        } else {
+            error_log("process-step4.php: project_impact_ratios record already exists for chain_sequence=$chain_sequence");
         }
-        mysqli_stmt_close($insert_ratio_stmt);
-        error_log("process-step4.php: Created new project_impact_ratios record for chain_sequence=$chain_sequence");
     } else {
-        error_log("process-step4.php: project_impact_ratios record already exists for chain_sequence=$chain_sequence");
+        error_log("process-step4.php: save_details_only=true, skipping project_impact_ratios creation");
     }
 
-    // เก็บปีที่เลือกใน session เพื่อใช้ในหน้าอื่น
-    $_SESSION['evaluation_year'] = $evaluation_year;
+    // เก็บปีที่เลือกใน session เพื่อใช้ในหน้าอื่น (เฉพาะกรณีที่ไม่ใช่การบันทึกรายละเอียดเท่านั้น)
+    if (!$save_details_only) {
+        $_SESSION['evaluation_year'] = $evaluation_year;
+    }
 
     // เก็บข้อมูลใน session เพื่อใช้ในการแสดงผล
     $_SESSION['selected_outcome'] = $selected_outcome;
