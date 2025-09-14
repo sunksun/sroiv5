@@ -120,9 +120,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sroi_irr = $_POST['sroi_irr'] ?? [];
 }
 
-// ดึงข้อมูล SROI เหมือนกับหน้า SROI Ex-post Analysis
+// ดึงข้อมูล SROI เหมือนกับหน้า SROI Ex-post Analysis (คำนวณใหม่เสมอ)
 $sroi_table_data = null;
-if ($project_id && !$submitted) {
+if ($project_id) {
     $selected_project_id = $project_id;
 
     // ดึงข้อมูลต้นทุนและผลประโยชน์เหมือนกับใน index.php
@@ -216,8 +216,8 @@ if ($project_id && !$submitted) {
             include 'components/output-section.php';
             $output_content = ob_get_clean();
 
-            // ใช้ค่า base_case_impact ที่คำนวณไว้แทนค่าจาก output-section
-            $base_case_impact = $calculated_base_case_impact;
+            // ใช้ค่า base_case_impact จาก output-section ที่คำนวณถูกต้อง
+            // $base_case_impact = $calculated_base_case_impact;
 
             // ถ้ามีข้อมูล SROI จาก output-section ให้เก็บไว้
             if (isset($sroi_ratio) && isset($npv)) {
@@ -238,8 +238,8 @@ if ($project_id && !$submitted) {
         } catch (Exception $e) {
             ob_get_clean();
             $sroi_table_data = null;
-            // ใช้ค่าที่คำนวณไว้แม้เมื่อเกิด exception
-            $base_case_impact = $calculated_base_case_impact;
+            // ใช้ค่าที่คำนวณไว้แม้เมื่อเกิด exception (ใช้ค่าจาก output-section)
+            // $base_case_impact = $calculated_base_case_impact;
         }
     } else {
         // ใช้ค่าที่คำนวณไว้เมื่อไม่มีข้อมูลสำหรับ include output-section
@@ -485,11 +485,16 @@ if ($project_id && !$submitted) {
 
                 <div class="section">
                     <h3>ตารางการเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
-                    <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 0, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่าน้อยกว่า 0) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : ''; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน 0.94 บาท ซึ่งถือว่าไม่คุ้มค่าการลงทุน และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
+                    <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         echo str_replace('%', '', $sroi_table_data['irr']);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }                                                                                                                                                                                 ?></span> ซึ่งน้อยกว่าอัตราคิดลดร้อยละ 1.78 โดยมีรายละเอียด ดังนี้</p>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    } else {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        echo 'N/A';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }                                                                                                                                                                                 ?></span> ซึ่ง<?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? (floatval(str_replace('%', '', $sroi_table_data['irr'])) < $saved_discount_rate ? 'น้อยกว่า' : 'มากกว่า') : 'เปรียบเทียบกับ'; ?>อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate, 2); ?> โดยมีรายละเอียด ดังนี้</p>
 
-                    <p style="margin-bottom: 20px; line-height: 1.6;">จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> (เช่น นาย/นาง.........................ตัวแทนกลุ่มวิสาหกิจ /ชาวบ้าน) จำนวน..........คน สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1</p>
+                    <p style="margin-bottom: 20px; line-height: 1.6;">จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span>
+                        <input type="text" style="border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; margin: 0 4px; min-width: 200px;" placeholder="เช่น นาย/นาง ชื่อ-นามสกุล ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน" />
+                        จำนวน <input type="number" style="border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; margin: 0 4px; width: 80px;" placeholder="0" min="1" /> คน/กลุ่ม สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1
+                    </p>
                     <h3>ตารางที่ 1 เปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
 
                     <?php
@@ -525,10 +530,10 @@ if ($project_id && !$submitted) {
                                             <td style="background-color: #e7f3ff; border: 2px solid #333; font-weight: bold; padding: 0.75rem; text-align: left; min-width: 200px; color: #0056b3; vertical-align: top; padding-left: 0.25rem;">
                                                 <?php echo nl2br(htmlspecialchars($ww_item['benefit_detail'])); ?>
                                             </td>
-                                            <td style="background-color: #fff9c4; border: 2px solid #333; padding: 0.5rem; min-width: 200px; vertical-align: top;">
+                                            <td style="background-color: #fff9c4; border: 2px solid #333; padding: 0.5rem; min-width: 200px; vertical-align: top; text-align: center;">
                                                 <?php echo nl2br(htmlspecialchars($ww_item['with_value'] ?: '-')); ?>
                                             </td>
-                                            <td style="background-color: #fff9c4; border: 2px solid #333; padding: 0.5rem; min-width: 200px; vertical-align: top;">
+                                            <td style="background-color: #fff9c4; border: 2px solid #333; padding: 0.5rem; min-width: 200px; vertical-align: top; text-align: center;">
                                                 <?php echo nl2br(htmlspecialchars($ww_item['without_value'] ?: '-')); ?>
                                             </td>
                                         </tr>
@@ -779,17 +784,11 @@ if ($project_id && !$submitted) {
                                             <!-- กิจกรรม -->
                                             <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
                                                 <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; font-size: 0.85rem;">
-                                                    <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($activity['activity_code']); ?></div>
+                                                    <div style="font-weight: bold; color: #667eea;"><strong><?php echo ($activity_index + 1); ?></strong>.</div>
                                                     <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($activity['activity_name']); ?></div>
                                                     <?php if (!empty($activity['activity_description'])): ?>
                                                         <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
                                                             <?php echo htmlspecialchars($activity['activity_description']); ?>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                    <?php if (isset($activity['source_type'])): ?>
-                                                        <div style="font-size: 0.7rem; color: #007bff; margin-top: 0.25rem;">
-                                                            <i class="fas fa-info-circle"></i>
-                                                            <?php echo $activity['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -808,9 +807,9 @@ if ($project_id && !$submitted) {
                                                 }
                                                 ?>
                                                 <?php if (!empty($activity_outputs)): ?>
-                                                    <?php foreach ($activity_outputs as $output): ?>
+                                                    <?php foreach ($activity_outputs as $output_index => $output): ?>
                                                         <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                                                            <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($output['output_sequence']); ?></div>
+                                                            <div style="font-weight: bold; color: #667eea;"><strong><?php echo ($output_index + 1); ?></strong>.</div>
                                                             <div style="color: #333; margin-top: 0.25rem;">
                                                                 <?php echo htmlspecialchars(
                                                                     !empty($output['project_output_details'])
@@ -818,61 +817,38 @@ if ($project_id && !$submitted) {
                                                                         : $output['output_description']
                                                                 ); ?>
                                                             </div>
-                                                            <?php if (isset($output['source_type'])): ?>
-                                                                <div style="font-size: 0.7rem; color: #28a745; margin-top: 0.25rem;">
-                                                                    <i class="fas fa-link"></i>
-                                                                    <?php echo $output['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
-                                                                </div>
-                                                            <?php endif; ?>
                                                         </div>
                                                     <?php endforeach; ?>
                                                 <?php else: ?>
-                                                    <small style="color: #6c757d;">ไม่มีผลผลิตสำหรับกิจกรรม <?php echo htmlspecialchars($activity['activity_code']); ?></small>
+                                                    <small style="color: #6c757d;">ไม่มีผลผลิตสำหรับกิจกรรม <?php echo ($activity_index + 1); ?></small>
                                                 <?php endif; ?>
                                             </td>
 
-                                            <!-- ผู้ใช้ประโยชน์ - แสดงตามกิจกรรม -->
+                                            <!-- ผู้ใช้ประโยชน์ - แสดงตามแต่ละแถว -->
                                             <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
                                                 <?php
-                                                // แสดงผู้ใช้ประโยชน์แยกตามแต่ละกิจกรรม
+                                                // แสดงผู้ใช้ประโยชน์แยกตามแต่ละกิจกรรม/แถว
                                                 $activity_beneficiaries = [];
 
-                                                if ($activity['source_type'] == 'legacy') {
-                                                    // กิจกรรมระบบเดิม: แสดงเฉพาะข้อมูลจาก project_impact_ratios
-                                                    foreach ($project_beneficiaries_ip as $beneficiary) {
-                                                        if ($beneficiary['source_type'] == 'legacy') {
-                                                            $activity_beneficiaries[] = $beneficiary;
-                                                        }
-                                                    }
-                                                } else if ($activity['source_type'] == 'new_chain') {
-                                                    // กิจกรรม Impact Chain: แสดงเฉพาะข้อมูลจาก impact_chain_ratios ที่ตรงกับ activity_id
-                                                    foreach ($project_beneficiaries_ip as $beneficiary) {
-                                                        if ($beneficiary['source_type'] == 'new_chain' && $beneficiary['activity_id'] == $activity['activity_id']) {
-                                                            $activity_beneficiaries[] = $beneficiary;
-                                                        }
-                                                    }
+                                                // ให้แต่ละแถวแสดงผู้ใช้ประโยชน์ตามลำดับ
+                                                if (isset($project_beneficiaries_ip[$activity_index])) {
+                                                    $activity_beneficiaries[] = $project_beneficiaries_ip[$activity_index];
                                                 }
                                                 ?>
                                                 <?php if (!empty($activity_beneficiaries)): ?>
                                                     <?php foreach ($activity_beneficiaries as $beneficiary): ?>
-                                                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                                                            <div style="font-weight: bold; color: #667eea;">ผลประโยชน์ <?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
+                                                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; font-size: 0.85rem;">
+                                                            <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
                                                             <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
                                                             <?php if (!empty($beneficiary['benefit_detail'])): ?>
                                                                 <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
                                                                     รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
                                                                 </div>
                                                             <?php endif; ?>
-                                                            <?php if (isset($beneficiary['source_type'])): ?>
-                                                                <div style="font-size: 0.7rem; color: #dc3545; margin-top: 0.25rem;">
-                                                                    <i class="fas fa-users"></i>
-                                                                    <?php echo $beneficiary['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
-                                                                </div>
-                                                            <?php endif; ?>
                                                         </div>
                                                     <?php endforeach; ?>
                                                 <?php else: ?>
-                                                    <small style="color: #6c757d;">ไม่มีผู้ใช้ประโยชน์สำหรับกิจกรรม <?php echo htmlspecialchars($activity['activity_code']); ?></small>
+                                                    <small style="color: #6c757d;">ไม่มีผู้ใช้ประโยชน์สำหรับแถวที่ <?php echo ($activity_index + 1); ?></small>
                                                 <?php endif; ?>
                                             </td>
 
@@ -889,9 +865,9 @@ if ($project_id && !$submitted) {
                                                 }
                                                 ?>
                                                 <?php if (!empty($activity_outcomes)): ?>
-                                                    <?php foreach ($activity_outcomes as $outcome): ?>
+                                                    <?php foreach ($activity_outcomes as $outcome_index => $outcome): ?>
                                                         <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                                                            <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($outcome['outcome_sequence']); ?></div>
+                                                            <div style="font-weight: bold; color: #667eea;"><strong><?php echo ($outcome_index + 1); ?></strong>.</div>
                                                             <div style="color: #333; margin-top: 0.25rem;">
                                                                 <?php
                                                                 // ใช้ข้อมูลจาก project_outcome_details เท่านั้น
@@ -900,17 +876,12 @@ if ($project_id && !$submitted) {
                                                                 ?>
                                                             </div>
                                                             <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                                จากผลผลิต: <?php echo htmlspecialchars($outcome['output_sequence']); ?>
-                                                                <?php if (isset($outcome['source_type'])): ?>
-                                                                    | <span style="color: #17a2b8;">
-                                                                        <?php echo $outcome['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
-                                                                    </span>
-                                                                <?php endif; ?>
+                                                                จากผลผลิต: <?php echo ($outcome_index + 1); ?>
                                                             </div>
                                                         </div>
                                                     <?php endforeach; ?>
                                                 <?php else: ?>
-                                                    <small style="color: #6c757d;">ไม่มีผลลัพธ์สำหรับกิจกรรม <?php echo htmlspecialchars($activity['activity_code']); ?></small>
+                                                    <small style="color: #6c757d;">ไม่มีผลลัพธ์สำหรับกิจกรรม <?php echo ($activity_index + 1); ?></small>
                                                 <?php endif; ?>
                                             </td>
 
@@ -1215,7 +1186,7 @@ if ($project_id && !$submitted) {
                 <p>3) ผลกระทบด้านสิ่งแวดล้อม <span class="highlight"><?php echo htmlspecialchars($environmental_impact); ?></span></p>
 
                 <h3>ผลการประเมินผลตอบแทนทางสังคม (SROI)</h3>
-                <p>พบว่า โครงการ<span class="highlight"><?php echo htmlspecialchars($evaluation_project2); ?></span>มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span class="highlight"><?php echo number_format($npv_value, 2); ?></span> (ซึ่งมีค่า<span class="highlight"><?php echo htmlspecialchars($npv_status); ?></span>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span class="highlight"><?php echo number_format($sroi_value, 2); ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <span class="highlight"><?php echo number_format($social_return, 2); ?></span> บาท ซึ่งถือว่า<span class="highlight"><?php echo htmlspecialchars($investment_status); ?></span> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span class="highlight"><?php echo number_format($irr_value, 2); ?></span>ซึ่ง<span class="highlight"><?php echo htmlspecialchars($irr_compare); ?></span>อัตราคิดลดร้อยละ 2.00</p>
+                <p>พบว่า โครงการ<span class="highlight"><?php echo htmlspecialchars($evaluation_project2 ?: ($selected_project['name'] ?? '')); ?></span>มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?>%) <span class="highlight"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2) : number_format($npv_value, 2); ?></span> (ซึ่งมีค่า<span class="highlight"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : htmlspecialchars($npv_status); ?></span>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span class="highlight"><?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? number_format($sroi_table_data['sroi_ratio'], 2) : number_format($sroi_value, 2); ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <span class="highlight"><?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? number_format($sroi_table_data['sroi_ratio'], 2) : number_format($social_return, 2); ?></span> บาท ซึ่งถือว่า<span class="highlight"><?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : htmlspecialchars($investment_status); ?></span> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span class="highlight"><?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? str_replace('%', '', $sroi_table_data['irr']) : number_format($irr_value, 2); ?></span>ซึ่ง<span class="highlight"><?php echo htmlspecialchars($irr_compare ?: 'เปรียบเทียบกับ'); ?></span>อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?></p>
 
                 <h3>การสัมภาษณ์ผู้ได้รับประโยชน์</h3>
                 <p>จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span class="highlight"><?php echo htmlspecialchars($evaluation_project); ?></span> สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1</p>
@@ -1509,19 +1480,19 @@ if ($project_id && !$submitted) {
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd;">ค่า SROI</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo number_format($sroi_value, 2); ?></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? number_format($sroi_table_data['sroi_ratio'], 2) : number_format($sroi_value, 2); ?></td>
                         </tr>
                         <tr style="background: #f8f9fa;">
                             <td style="padding: 10px; border: 1px solid #ddd;">ค่า NPV</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo number_format($npv_value, 2); ?> บาท</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2) : number_format($npv_value, 2); ?> บาท</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd;">ค่า IRR</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo number_format($irr_value, 2); ?>%</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? $sroi_table_data['irr'] : number_format($irr_value, 2) . '%'; ?></td>
                         </tr>
                         <tr style="background: #f8f9fa;">
                             <td style="padding: 10px; border: 1px solid #ddd;">ผลตอบแทนต่อการลงทุน 1 บาท</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo number_format($social_return, 2); ?> บาท</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? number_format($sroi_table_data['sroi_ratio'], 2) : number_format($social_return, 2); ?> บาท</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd;">สรุปความคุ้มค่า</td>

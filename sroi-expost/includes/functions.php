@@ -240,11 +240,13 @@ function calculateIRR($cash_flows, $max_iterations = 100, $tolerance = 0.0001) {
 }
 
 /**
- * คำนวณ SROI Ratio
+ * คำนวณ SROI Ratio - ใช้สูตรใหม่ที่ตรงกับ index.php
+ * SROI = (Total Present Benefit - Present Base Case Impact) ÷ Total Present Cost
  */
-function calculateSROIRatio($total_benefits, $total_costs) {
+function calculateSROIRatio($total_benefits, $total_costs, $base_case_impact = 0) {
     if ($total_costs == 0) return 0;
-    return $total_benefits / $total_costs;
+    $net_social_benefit = $total_benefits - $base_case_impact;
+    return $net_social_benefit / $total_costs;
 }
 
 /**

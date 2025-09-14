@@ -28,43 +28,37 @@ $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
 $benefit_data = [];
 if ($project_id > 0) {
     // จาก project_impact_ratios (Legacy system)
-    $legacy_beneficiaries_query = "
-        SELECT DISTINCT pir.beneficiary, pir.benefit_detail, pir.benefit_number, 'legacy' as source_type
+    $legacy_benefit_query = "
+        SELECT DISTINCT pir.benefit_detail, pir.benefit_number, 'legacy' as source_type
         FROM project_impact_ratios pir
-        WHERE pir.project_id = ? AND pir.beneficiary IS NOT NULL AND pir.beneficiary != ''
+        WHERE pir.project_id = ? AND pir.benefit_detail IS NOT NULL AND pir.benefit_detail != ''
         ORDER BY pir.benefit_number ASC
     ";
-    $legacy_stmt = mysqli_prepare($conn, $legacy_beneficiaries_query);
+    $legacy_stmt = mysqli_prepare($conn, $legacy_benefit_query);
     mysqli_stmt_bind_param($legacy_stmt, "i", $project_id);
     mysqli_stmt_execute($legacy_stmt);
     $legacy_result = mysqli_stmt_get_result($legacy_stmt);
-    while ($beneficiary = mysqli_fetch_assoc($legacy_result)) {
-        $full_description = "ผลประโยชน์ " . $beneficiary['benefit_number'] . ": " . $beneficiary['beneficiary'];
-        if (!empty($beneficiary['benefit_detail'])) {
-            $full_description .= "\n\nรายละเอียด: " . $beneficiary['benefit_detail'];
-        }
-        $benefit_data[] = $full_description;
+    while ($row = mysqli_fetch_assoc($legacy_result)) {
+        // แสดงเฉพาะ benefit_detail โดยไม่รวม beneficiary
+        $benefit_data[] = $row['benefit_detail'];
     }
     mysqli_stmt_close($legacy_stmt);
 
     // จาก impact_chain_ratios (New chain system)
-    $new_beneficiaries_query = "
-        SELECT DISTINCT icr.beneficiary, icr.benefit_detail, icr.benefit_number, 'new_chain' as source_type
+    $new_benefit_query = "
+        SELECT DISTINCT icr.benefit_detail, icr.benefit_number, 'new_chain' as source_type
         FROM impact_chain_ratios icr
         INNER JOIN impact_chains ic ON icr.impact_chain_id = ic.id
-        WHERE ic.project_id = ? AND icr.beneficiary IS NOT NULL AND icr.beneficiary != ''
+        WHERE ic.project_id = ? AND icr.benefit_detail IS NOT NULL AND icr.benefit_detail != ''
         ORDER BY icr.benefit_number ASC
     ";
-    $new_stmt = mysqli_prepare($conn, $new_beneficiaries_query);
+    $new_stmt = mysqli_prepare($conn, $new_benefit_query);
     mysqli_stmt_bind_param($new_stmt, "i", $project_id);
     mysqli_stmt_execute($new_stmt);
     $new_result = mysqli_stmt_get_result($new_stmt);
-    while ($beneficiary = mysqli_fetch_assoc($new_result)) {
-        $full_description = "ผลประโยชน์ " . $beneficiary['benefit_number'] . ": " . $beneficiary['beneficiary'];
-        if (!empty($beneficiary['benefit_detail'])) {
-            $full_description .= "\n\nรายละเอียด: " . $beneficiary['benefit_detail'];
-        }
-        $benefit_data[] = $full_description;
+    while ($row = mysqli_fetch_assoc($new_result)) {
+        // แสดงเฉพาะ benefit_detail โดยไม่รวม beneficiary  
+        $benefit_data[] = $row['benefit_detail'];
     }
     mysqli_stmt_close($new_stmt);
 }
@@ -345,8 +339,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #155724;
         }
 
-        /* Row Headers - Beneficiary Column */
-        .beneficiary-header {
+        /* Row Headers - Benefit Column */
+        .benefit-header {
             background-color: #e7f3ff;
             font-weight: bold;
             padding: 0.75rem;
@@ -499,7 +493,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             .value-cell,
-            .beneficiary-header {
+            .benefit-header {
                 min-width: 150px;
             }
 
@@ -565,12 +559,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </thead>
                     <tbody>
                         <?php 
-                        // แสดงเฉพาะข้อมูลผลประโยชน์ที่มีในฐานข้อมูล
+                        // แสดงเฉพาะข้อมูล benefit_detail ที่มีในฐานข้อมูล
                         if (count($benefit_data) > 0) {
                             foreach ($benefit_data as $index => $benefit_name): 
                         ?>
                             <tr>
-                                <td class="beneficiary-header">
+                                <td class="benefit-header">
                                     <?php echo nl2br(htmlspecialchars($benefit_name)); ?>
                                 </td>
                                 <td class="value-cell">

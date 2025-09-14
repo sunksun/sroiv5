@@ -24,6 +24,9 @@ $username = $_SESSION['username'];
 // รับ project_id จาก URL
 $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
 
+// รับ parameter สำหรับเพิ่มข้อมูลใหม่
+$add_new = isset($_GET['add_new']) ? true : false;
+
 // ดึงข้อมูลจาก step4 session (ถ้ามี)
 $step4_data = isset($_SESSION['step4_data']) ? $_SESSION['step4_data'] : null;
 $step4_info = '';
@@ -927,102 +930,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <!-- Complete Project Data Display -->
-            <div class="alert alert-success">
-                <strong>📋 ข้อมูลรายละเอียดทั้งหมดที่บันทึกข้อมูลมาตั้งแต่ Step 1-4</strong>
-
-                <!-- Step 1 Data -->
-                <div class="mt-3">
-                    <h6><span class="badge bg-primary">Step 1</span> ยุทธศาสตร์ที่เลือก (<?php echo count($project_strategies); ?> รายการ)</h6>
-                    <?php if (!empty($project_strategies)): ?>
-                        <div class="row">
-                            <?php foreach ($project_strategies as $strategy): ?>
-                                <div class="col-md-6 mb-2">
-                                    <div class="p-2 bg-light rounded">
-                                        <strong><?php echo htmlspecialchars($strategy['strategy_code']); ?></strong>:
-                                        <?php echo htmlspecialchars($strategy['strategy_name']); ?>
-                                        <?php if (!empty($strategy['description'])): ?>
-                                            <br><small class="text-muted"><?php echo htmlspecialchars($strategy['description']); ?></small>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <small class="text-muted">ยังไม่มีการเลือกยุทธศาสตร์</small>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Step 2 Data -->
-                <div class="mt-3">
-                    <h6><span class="badge bg-warning">Step 2</span> กิจกรรมที่เลือก (<?php echo count($project_activities); ?> รายการ)</h6>
-                    <?php if (!empty($project_activities)): ?>
-                        <div class="row">
-                            <?php foreach ($project_activities as $activity): ?>
-                                <div class="col-md-6 mb-2">
-                                    <div class="p-2 bg-light rounded">
-                                        <strong><?php echo htmlspecialchars($activity['activity_code']); ?></strong>:
-                                        <?php echo htmlspecialchars($activity['activity_name']); ?>
-                                        <?php if (!empty($activity['activity_description'])): ?>
-                                            <br><small class="text-muted"><?php echo htmlspecialchars($activity['activity_description']); ?></small>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <small class="text-muted">ยังไม่มีการเลือกกิจกรรม</small>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Step 3 Data -->
-                <div class="mt-3">
-                    <h6><span class="badge bg-info">Step 3</span> ผลผลิตที่เลือก (<?php echo count($project_outputs); ?> รายการ)</h6>
-                    <?php if (!empty($project_outputs)): ?>
-                        <div class="row">
-                            <?php foreach ($project_outputs as $output): ?>
-                                <div class="col-md-6 mb-2">
-                                    <div class="p-2 bg-light rounded">
-                                        <strong><?php echo htmlspecialchars($output['output_sequence']); ?></strong>:
-                                        <?php echo htmlspecialchars($output['output_description']); ?>
-                                        <?php if (!empty($output['project_output_details'])): ?>
-                                            <br><strong class="text-primary">รายละเอียดเพิ่มเติม:</strong>
-                                            <small><?php echo htmlspecialchars($output['project_output_details']); ?></small>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <small class="text-muted">ยังไม่มีการเลือกผลผลิต</small>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Step 4 Data -->
-                <div class="mt-3">
-                    <h6><span class="badge bg-success">Step 4</span> ผลลัพธ์ที่เลือก (<?php echo count($project_outcomes); ?> รายการ)</h6>
-                    <?php if (!empty($project_outcomes)): ?>
-                        <div class="row">
-                            <?php foreach ($project_outcomes as $outcome): ?>
-                                <div class="col-md-6 mb-2">
-                                    <div class="p-2 bg-light rounded">
-                                        <strong><?php echo htmlspecialchars($outcome['outcome_sequence']); ?></strong>:
-                                        <?php echo htmlspecialchars($outcome['outcome_description']); ?>
-                                        <?php if (!empty($outcome['project_outcome_details'])): ?>
-                                            <br><strong class="text-success">รายละเอียดเพิ่มเติม:</strong>
-                                            <small><?php echo htmlspecialchars($outcome['project_outcome_details']); ?></small>
-                                        <?php endif; ?>
-                                        <br><small class="text-muted">จากผลผลิต: <?php echo htmlspecialchars($outcome['output_sequence']); ?></small>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <small class="text-muted">ยังไม่มีผลลัพธ์ที่บันทึกไว้</small>
-                    <?php endif; ?>
-                </div>
-
-            </div>
 
 
             <!-- Pathway Display Table -->
@@ -1061,17 +968,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <!-- กิจกรรม - แสดงแต่ละกิจกรรมในแถวต่างกัน -->
                                 <td>
                                     <div class="activity-item">
-                                        <div class="activity-code"><?php echo htmlspecialchars($activity['activity_code']); ?></div>
+                                        <div class="activity-code"><strong><?php echo ($activity_index + 1); ?></strong>.</div>
                                         <div class="activity-name"><?php echo htmlspecialchars($activity['activity_name']); ?></div>
                                         <?php if (!empty($activity['activity_description'])): ?>
                                             <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
                                                 <?php echo htmlspecialchars($activity['activity_description']); ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        <?php if (isset($activity['source_type'])): ?>
-                                            <div style="font-size: 0.7rem; color: #007bff; margin-top: 0.25rem;">
-                                                <i class="fas fa-info-circle"></i>
-                                                <?php echo $activity['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -1090,9 +991,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     }
                                     ?>
                                     <?php if (!empty($activity_outputs)): ?>
-                                        <?php foreach ($activity_outputs as $output): ?>
+                                        <?php foreach ($activity_outputs as $output_index => $output): ?>
                                             <div class="output-item">
-                                                <div class="output-sequence"><?php echo htmlspecialchars($output['output_sequence']); ?></div>
+                                                <div class="output-sequence"><strong><?php echo ($output_index + 1); ?></strong>.</div>
                                                 <div class="output-description">
                                                     <?php echo htmlspecialchars(
                                                         !empty($output['project_output_details'])
@@ -1100,61 +1001,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                             : $output['output_description']
                                                     ); ?>
                                                 </div>
-                                                <?php if (isset($output['source_type'])): ?>
-                                                    <div style="font-size: 0.7rem; color: #28a745; margin-top: 0.25rem;">
-                                                        <i class="fas fa-link"></i>
-                                                        <?php echo $output['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
-                                                    </div>
-                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <small class="text-muted">ไม่มีผลผลิตสำหรับกิจกรรม <?php echo htmlspecialchars($activity['activity_code']); ?></small>
+                                        <small class="text-muted">ไม่มีผลผลิตสำหรับกิจกรรม <?php echo ($activity_index + 1); ?></small>
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- ผู้ใช้ประโยชน์ - แสดงตามกิจกรรม -->
+                                <!-- ผู้ใช้ประโยชน์ - แสดงตามแต่ละแถว -->
                                 <td>
                                     <?php
-                                    // แสดงผู้ใช้ประโยชน์แยกตามแต่ละกิจกรรม
+                                    // แสดงผู้ใช้ประโยชน์แยกตามแต่ละกิจกรรม/แถว
+                                    // แต่ละแถวจะแสดงเฉพาะผู้ใช้ประโยชน์ที่เกี่ยวข้องกับลำดับของแถว
                                     $activity_beneficiaries = [];
-
-                                    if ($activity['source_type'] == 'legacy') {
-                                        // กิจกรรมระบบเดิม: แสดงเฉพาะข้อมูลจาก project_impact_ratios
-                                        foreach ($project_beneficiaries as $beneficiary) {
-                                            if ($beneficiary['source_type'] == 'legacy') {
-                                                $activity_beneficiaries[] = $beneficiary;
-                                            }
-                                        }
-                                    } else if ($activity['source_type'] == 'new_chain') {
-                                        // กิจกรรม Impact Chain: แสดงเฉพาะข้อมูลจาก impact_chain_ratios ที่ตรงกับ activity_id
-                                        foreach ($project_beneficiaries as $beneficiary) {
-                                            if ($beneficiary['source_type'] == 'new_chain' && $beneficiary['activity_id'] == $activity['activity_id']) {
-                                                $activity_beneficiaries[] = $beneficiary;
-                                            }
-                                        }
+                                    
+                                    // ให้แต่ละแถวแสดงผู้ใช้ประโยชน์ตามลำดับ
+                                    if (isset($project_beneficiaries[$activity_index])) {
+                                        $activity_beneficiaries[] = $project_beneficiaries[$activity_index];
                                     }
                                     ?>
                                     <?php if (!empty($activity_beneficiaries)): ?>
                                         <?php foreach ($activity_beneficiaries as $beneficiary): ?>
                                             <div class="user-item">
-                                                <div class="user-info">ผลประโยชน์ <?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
+                                                <div class="user-info"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
                                                 <div class="user-detail"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
-                                                <?php if (!empty($beneficiary['benefit_detail'])): ?>
-                                                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                        รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                                <?php if (isset($beneficiary['source_type'])): ?>
-                                                    <div style="font-size: 0.7rem; color: #dc3545; margin-top: 0.25rem;">
-                                                        <i class="fas fa-users"></i>
-                                                        <?php echo $beneficiary['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
-                                                    </div>
-                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <small class="text-muted">ไม่มีผู้ใช้ประโยชน์สำหรับกิจกรรม <?php echo htmlspecialchars($activity['activity_code']); ?></small>
+                                        <small class="text-muted">ไม่มีผู้ใช้ประโยชน์สำหรับแถวที่ <?php echo ($activity_index + 1); ?></small>
                                     <?php endif; ?>
                                 </td>
 
@@ -1171,9 +1045,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     }
                                     ?>
                                     <?php if (!empty($activity_outcomes)): ?>
-                                        <?php foreach ($activity_outcomes as $outcome): ?>
+                                        <?php foreach ($activity_outcomes as $outcome_index => $outcome): ?>
                                             <div class="outcome-item">
-                                                <div class="outcome-sequence"><?php echo htmlspecialchars($outcome['outcome_sequence']); ?></div>
+                                                <div class="outcome-sequence"><strong><?php echo ($outcome_index + 1); ?></strong>.</div>
                                                 <div class="outcome-description">
                                                     <?php
                                                     // ใช้ข้อมูลจาก project_outcome_details เท่านั้น
@@ -1182,17 +1056,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                     ?>
                                                 </div>
                                                 <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                    จากผลผลิต: <?php echo htmlspecialchars($outcome['output_sequence']); ?>
-                                                    <?php if (isset($outcome['source_type'])): ?>
-                                                        | <span style="color: #17a2b8;">
-                                                            <?php echo $outcome['source_type'] == 'legacy' ? 'ระบบเดิม' : 'Impact Chain'; ?>
-                                                        </span>
-                                                    <?php endif; ?>
+                                                    จากผลผลิต: <?php echo ($outcome_index + 1); ?>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <small class="text-muted">ไม่มีผลลัพธ์สำหรับกิจกรรม <?php echo htmlspecialchars($activity['activity_code']); ?></small>
+                                        <small class="text-muted">ไม่มีผลลัพธ์สำหรับกิจกรรม <?php echo ($activity_index + 1); ?></small>
                                     <?php endif; ?>
                                 </td>
 
@@ -1224,10 +1093,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </tbody>
             </table>
 
+            <!-- Instructions -->
+            <?php if (empty($existing_pathways) && !$add_new): ?>
+                <div class="alert alert-info">
+                    <strong>📝 ขั้นตอนการสร้าง Impact Pathway:</strong>
+                    <ol style="margin: 10px 0 0 20px;">
+                        <li>กรอกข้อมูล <strong>"ปัจจัยนำเข้า (Input)"</strong> - ทรัพยากรและปัจจัยที่ใช้ในโครงการ</li>
+                        <li>กรอกข้อมูล <strong>"ผลกระทบ (Impact)"</strong> - ผลกระทบทางสังคม/เศรษฐกิจ/สิ่งแวดล้อม</li>
+                        <li>กดปุ่ม <strong>"💾 บันทึกข้อมูล"</strong> เพื่อบันทึกข้อมูล</li>
+                        <li>หลังจากบันทึกแล้ว จะเห็นปุ่ม <strong>"ถัดไป"</strong> เพื่อไปขั้นตอนต่อไป</li>
+                    </ol>
+                </div>
+            <?php elseif ($add_new): ?>
+                <div class="alert alert-info">
+                    <strong>➕ เพิ่มข้อมูล Impact Pathway ใหม่</strong>
+                    <p class="mb-0">กรอกข้อมูลเพิ่มเติมสำหรับโครงการนี้</p>
+                </div>
+            <?php endif; ?>
+
             <!-- Existing Pathways -->
             <?php if (!empty($existing_pathways)): ?>
                 <div class="alert alert-success">
-                    <strong>📋 มีข้อมูล Impact Pathway แล้ว <?php echo count($existing_pathways); ?> รายการ</strong>
+                    <strong>✅ บันทึกข้อมูล Impact Pathway แล้ว <?php echo count($existing_pathways); ?> รายการ</strong>
                     <div style="margin-top: 1rem;">
                         <?php foreach ($existing_pathways as $index => $pathway): ?>
                             <div class="mb-3 p-3 border rounded" style="background: rgba(255,255,255,0.7);">
@@ -1277,62 +1164,267 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <!-- Form -->
-            <form method="POST" id="createPathwayForm">
-                <!-- Hidden project_id field -->
-                <input type="hidden" name="project_id" value="<?php echo $project_id; ?>">
+            <!-- Form - แสดงเฉพาะเมื่อยังไม่มีข้อมูลหรือต้องการเพิ่มข้อมูลใหม่ -->
+            <?php if (empty($existing_pathways) || $add_new): ?>
+                <form method="POST" id="createPathwayForm">
+                    <!-- Hidden project_id field -->
+                    <input type="hidden" name="project_id" value="<?php echo $project_id; ?>">
 
-                <!-- Pathway Steps -->
-                <div class="form-group">
-                    <label class="form-label">
-                        <span class="step-number">1</span>
-                        ปัจจัยนำเข้า (Input)
-                    </label>
-                    <div>
-                        <textarea class="form-textarea" name="input_description" rows="4"
-                            placeholder="" required><?php echo htmlspecialchars($_POST['input_description'] ?? ''); ?></textarea>
-                        <div class="form-help">ระบุทรัพยากรและปัจจัยนำเข้าที่ใช้ในโครงการ</div>
-                    </div>
-                </div>
-
-
-                <div class="form-group">
-                    <label class="form-label">
-                        <span class="step-number">2</span>
-                        ผลกระทบ (Impact)
-                    </label>
-                    <div>
-                        <textarea class="form-textarea" name="impact_description" rows="4"
-                            placeholder="" required><?php echo htmlspecialchars($_POST['impact_description'] ?? ''); ?></textarea>
-                        <div class="form-help">ผลกระทบด้านสังคม/เศรษฐกิจ/สังคมและสิ่งแวดล้อม</div>
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="goBack()">
-                        ← ยกเลิก
-                    </button>
-
-                    <div class="loading" id="loadingSpinner">
-                        <div class="spinner"></div>
-                        <span>กำลังบันทึกข้อมูล...</span>
+                    <!-- Pathway Steps -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="step-number">1</span>
+                            ปัจจัยนำเข้า (Input)
+                        </label>
+                        <div>
+                            <textarea class="form-textarea" name="input_description" rows="4"
+                                placeholder="ระบุทรัพยากรและปัจจัยนำเข้าที่ใช้ในโครงการ" required><?php echo htmlspecialchars($_POST['input_description'] ?? ''); ?></textarea>
+                            <div class="form-help">ระบุทรัพยากรและปัจจัยนำเข้าที่ใช้ในโครงการ</div>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn btn-success" id="submitBtn">
-                        💾 บันทึกข้อมูล
-                    </button>
-                    <?php if (!empty($existing_pathways)): ?>
-                        <button type="button" class="btn btn-primary" onclick="goToNext()">
-                            ถัดไป →
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span class="step-number">2</span>
+                            ผลกระทบ (Impact)
+                        </label>
+                        <div>
+                            <textarea class="form-textarea" name="impact_description" rows="4"
+                                placeholder="ผลกระทบด้านสังคม/เศรษฐกิจ/สิ่งแวดล้อม" required><?php echo htmlspecialchars($_POST['impact_description'] ?? ''); ?></textarea>
+                            <div class="form-help">ผลกระทบด้านสังคม/เศรษฐกิจ/สังคมและสิ่งแวดล้อม</div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <?php if ($add_new): ?>
+                            <a href="impact_pathway.php?project_id=<?php echo $project_id; ?>" class="btn btn-secondary">
+                                ← ยกเลิก
+                            </a>
+                        <?php else: ?>
+                            <button type="button" class="btn btn-secondary" onclick="goBack()">
+                                ← ยกเลิก
+                            </button>
+                        <?php endif; ?>
+
+                        <div class="loading" id="loadingSpinner">
+                            <div class="spinner"></div>
+                            <span>กำลังบันทึกข้อมูล...</span>
+                        </div>
+
+                        <button type="submit" class="btn btn-success" id="submitBtn">
+                            💾 บันทึกข้อมูล
                         </button>
-                    <?php endif; ?>
+                    </div>
+                </form>
+            <?php else: ?>
+                <!-- แสดงข้อมูลที่บันทึกแล้วและปุ่มถัดไป -->
+                <div class="alert alert-success">
+                    <h5>✅ บันทึกข้อมูล Impact Pathway เรียบร้อยแล้ว</h5>
+                    <p class="mb-0">ข้อมูลได้รับการบันทึกแล้ว คุณสามารถไปขั้นตอนถัดไปได้</p>
                 </div>
-            </form>
+
+                <div class="form-actions" style="justify-content: center; border-top: none; padding-top: 0;">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">
+                        ← กลับหน้าหลัก
+                    </button>
+
+                    <!-- Next Button -->
+                    <form method="GET" action="./cost.php" style="display: inline; margin-left: 10px;">
+                        <input type="hidden" name="project_id" value="<?php echo $project_id; ?>">
+                        <button type="submit" class="btn btn-primary">
+                            📊 ถัดไป → กำหนดต้นทุน
+                        </button>
+                    </form>
+                    
+                    <!-- เพิ่มข้อมูลใหม่ -->
+                    <a href="impact_pathway.php?project_id=<?php echo $project_id; ?>&add_new=1" class="btn btn-success" style="margin-left: 10px;">
+                        ➕ เพิ่มข้อมูลใหม่
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
+
+        <?php
+        // คำนวณ NPV, IRR, SROI เหมือนกับหน้า sroi-expost/index.php
+        if ($project_id && !empty($existing_pathways)) {
+            // ใช้ฟังก์ชันเดียวกันกับ sroi-expost/index.php
+            require_once '../sroi-expost/includes/functions.php';
+            
+            // ดึงข้อมูลจากฐานข้อมูล
+            $available_years = [];
+            $yearly_query = "SELECT DISTINCT year FROM project_impact_ratios WHERE project_id = ? ORDER BY year";
+            $yearly_stmt = mysqli_prepare($conn, $yearly_query);
+            mysqli_stmt_bind_param($yearly_stmt, "i", $project_id);
+            mysqli_stmt_execute($yearly_stmt);
+            $yearly_result = mysqli_stmt_get_result($yearly_stmt);
+            
+            while ($year_row = mysqli_fetch_assoc($yearly_result)) {
+                $year_be = $year_row['year'];
+                $available_years[] = [
+                    'year_be' => $year_be,
+                    'year_ad' => $year_be - 543
+                ];
+            }
+            mysqli_stmt_close($yearly_stmt);
+            
+            if (!empty($available_years)) {
+                // คำนวณค่าต่างๆ เหมือนกับ sroi-expost/index.php
+                $discount_rate = 0.03;
+                $present_benefits_by_year = [];
+                $present_costs_by_year = [];
+                $base_case_impact = 0;
+                
+                foreach ($available_years as $year_index => $year) {
+                    // ดึงข้อมูลต้นทุนและผลประโยชน์
+                    $cost_query = "SELECT SUM(total_cost) as total FROM project_costs WHERE project_id = ? AND cost_year = ?";
+                    $cost_stmt = mysqli_prepare($conn, $cost_query);
+                    mysqli_stmt_bind_param($cost_stmt, "is", $project_id, $year['year_be']);
+                    mysqli_stmt_execute($cost_stmt);
+                    $cost_result = mysqli_stmt_get_result($cost_stmt);
+                    $cost_data = mysqli_fetch_assoc($cost_result);
+                    $total_cost = $cost_data['total'] ?: 0;
+                    mysqli_stmt_close($cost_stmt);
+                    
+                    // ดึงข้อมูลผลประโยชน์
+                    $benefit_query = "SELECT SUM(benefit_note) as total FROM project_impact_ratios WHERE project_id = ? AND year = ?";
+                    $benefit_stmt = mysqli_prepare($conn, $benefit_query);
+                    mysqli_stmt_bind_param($benefit_stmt, "is", $project_id, $year['year_be']);
+                    mysqli_stmt_execute($benefit_stmt);
+                    $benefit_result = mysqli_stmt_get_result($benefit_stmt);
+                    $benefit_data = mysqli_fetch_assoc($benefit_result);
+                    $total_benefit = $benefit_data['total'] ?: 0;
+                    mysqli_stmt_close($benefit_stmt);
+                    
+                    // คำนวณ Present Value
+                    $discount_factor = 1 / pow((1 + $discount_rate), $year_index);
+                    $present_costs_by_year[$year['year_be']] = $total_cost * $discount_factor;
+                    $present_benefits_by_year[$year['year_be']] = $total_benefit * $discount_factor;
+                    
+                    // คำนวณ Base Case Impact
+                    $impact_query = "SELECT attribution, deadweight, displacement, benefit_note FROM project_impact_ratios WHERE project_id = ? AND year = ?";
+                    $impact_stmt = mysqli_prepare($conn, $impact_query);
+                    mysqli_stmt_bind_param($impact_stmt, "is", $project_id, $year['year_be']);
+                    mysqli_stmt_execute($impact_stmt);
+                    $impact_result = mysqli_stmt_get_result($impact_stmt);
+                    
+                    while ($impact_row = mysqli_fetch_assoc($impact_result)) {
+                        $benefit_amount = $impact_row['benefit_note'] ?: 0;
+                        $attribution = $benefit_amount * ($impact_row['attribution'] / 100);
+                        $deadweight = $benefit_amount * ($impact_row['deadweight'] / 100);
+                        $displacement = $benefit_amount * ($impact_row['displacement'] / 100);
+                        $impact_amount = $attribution + $deadweight + $displacement;
+                        $base_case_impact += $impact_amount * $discount_factor;
+                    }
+                    mysqli_stmt_close($impact_stmt);
+                }
+                
+                $total_present_costs = array_sum($present_costs_by_year);
+                $total_present_benefits = array_sum($present_benefits_by_year);
+                $net_social_benefit = $total_present_benefits - $base_case_impact;
+                
+                // คำนวณ NPV
+                $npv = $net_social_benefit - $total_present_costs;
+                
+                // คำนวณ SROI
+                $sroi_ratio = ($total_present_costs > 0) ? ($net_social_benefit / $total_present_costs) : 0;
+                
+                // คำนวณ IRR (แบบง่าย)
+                $cash_flows = [];
+                foreach ($available_years as $year_index => $year) {
+                    $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
+                    $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
+                    $year_present_base_case = 0;
+                    
+                    $impact_query = "SELECT attribution, deadweight, displacement, benefit_note FROM project_impact_ratios WHERE project_id = ? AND year = ?";
+                    $impact_stmt = mysqli_prepare($conn, $impact_query);
+                    mysqli_stmt_bind_param($impact_stmt, "is", $project_id, $year['year_be']);
+                    mysqli_stmt_execute($impact_stmt);
+                    $impact_result = mysqli_stmt_get_result($impact_stmt);
+                    
+                    while ($impact_row = mysqli_fetch_assoc($impact_result)) {
+                        $benefit_amount = $impact_row['benefit_note'] ?: 0;
+                        $attribution = $benefit_amount * ($impact_row['attribution'] / 100);
+                        $deadweight = $benefit_amount * ($impact_row['deadweight'] / 100);
+                        $displacement = $benefit_amount * ($impact_row['displacement'] / 100);
+                        $impact_amount = $attribution + $deadweight + $displacement;
+                        $year_present_base_case += $impact_amount;
+                    }
+                    mysqli_stmt_close($impact_stmt);
+                    
+                    $net_cash_flow = ($present_benefit - $year_present_base_case) - $present_cost;
+                    $cash_flows[] = $net_cash_flow;
+                }
+                
+                $calculated_irr = calculateIRR($cash_flows);
+                $irr = ($calculated_irr !== null) ? number_format($calculated_irr * 100, 2) . '%' : 'N/A';
+                
+                // ฟังก์ชันสำหรับ format ตัวเลข
+                function formatNumber($number, $decimals = 0) {
+                    return number_format($number, $decimals, '.', ',');
+                }
+        ?>
+
+        <!-- NPV, SROI, IRR Summary Section -->
+        <div style="margin: 2rem 0; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">📊 สรุปผลการวิเคราะห์ทางการเงิน</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
+                        NPV (Net Present Value)<br>
+                        <small>มูลค่าปัจจุบันสุทธิ (บาท)</small>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: bold;">
+                        <?php echo formatNumber($npv, 2); ?>
+                    </div>
+                    <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
+                        <?php echo $npv >= 0 ? '✅ โครงการมีความคุ้มค่า' : '❌ โครงการไม่คุ้มค่า'; ?>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
+                        SROI Ratio<br>
+                        <small>อัตราผลตอบแทนทางสังคม (เท่า)</small>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: bold;">
+                        <?php echo formatNumber($sroi_ratio, 2); ?>
+                    </div>
+                    <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
+                        <?php echo $sroi_ratio >= 1 ? '✅ สร้างผลประโยชน์คุ้มค่า' : '❌ ไม่คุ้มค่าการลงทุน'; ?>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
+                        IRR (Internal Rate of Return)<br>
+                        <small>อัตราผลตอบแทนภายใน</small>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: bold;">
+                        <?php echo $irr; ?>
+                    </div>
+                    <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
+                        <?php echo $irr !== 'N/A' && $calculated_irr > 0.03 ? '✅ สูงกว่าอัตราคิดลด 3%' : '❌ ต่ำกว่าอัตราคิดลด'; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php 
+            } // end if (!empty($available_years))
+        } // end if ($project_id && !empty($existing_pathways))
+        ?>
     </div>
 
     <script>
+        // Global functions
+        function goBack() {
+            if (confirm('คุณต้องการยกเลิกการสร้าง Social Impact Pathway หรือไม่? ข้อมูลที่กรอกจะไม่ถูกบันทึก')) {
+                window.location.href = '../dashboard.php';
+            }
+        }
+
+        // DOM Ready Event
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('createPathwayForm');
             const submitBtn = document.getElementById('submitBtn');
@@ -1361,27 +1453,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 return true;
             }
-        });
 
-
-        function goBack() {
-            if (confirm('คุณต้องการยกเลิกการสร้าง Social Impact Pathway หรือไม่? ข้อมูลที่กรอกจะไม่ถูกบันทึก')) {
-                window.location.href = '../dashboard.php';
-            }
-        }
-
-        function goToNext() {
-            window.location.href = 'cost.php?project_id=<?php echo $project_id; ?>';
-        }
-
-        // แสดงข้อความเมื่อบันทึกสำเร็จ
-        <?php if (isset($_GET['saved']) && $_GET['saved'] == '1'): ?>
+            <?php if (isset($_GET['saved']) && $_GET['saved'] == '1'): ?>
+            // แสดงข้อความเมื่อบันทึกสำเร็จ
             setTimeout(function() {
                 alert('บันทึกข้อมูล Impact Pathway สำเร็จแล้ว! ตอนนี้สามารถกดปุ่ม "ถัดไป" เพื่อไปขั้นตอนต่อไปได้');
             }, 500);
-        <?php endif; ?>
+            <?php endif; ?>
 
-        console.log('🔗 Enhanced Social Impact Pathway Form with Activities and Outputs data loaded successfully!');
+            console.log('🔗 Enhanced Social Impact Pathway Form with Activities and Outputs data loaded successfully!');
+        });
     </script>
 </body>
 

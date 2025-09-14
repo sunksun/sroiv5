@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 require_once 'config.php';
 
@@ -13,35 +17,49 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
     exit;
 }
 
+// รับ ID โครงการ
+$project_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$user_id = $_SESSION['user_id'];
+
+if ($project_id == 0) {
+    $_SESSION['error_message'] = "ไม่พบข้อมูลโครงการ";
+    header("location: project-list.php");
+    exit;
+}
+
+// ดึงข้อมูลโครงการ พร้อมตรวจสอบสิทธิ์
+$project_query = "SELECT * FROM projects WHERE id = ? AND created_by = ?";
+$project_stmt = mysqli_prepare($conn, $project_query);
+mysqli_stmt_bind_param($project_stmt, 'is', $project_id, $user_id);
+mysqli_stmt_execute($project_stmt);
+$project_result = mysqli_stmt_get_result($project_stmt);
+$project = mysqli_fetch_assoc($project_result);
+mysqli_stmt_close($project_stmt);
+
+if (!$project) {
+    $_SESSION['error_message'] = "คุณไม่มีสิทธิ์แก้ไขโครงการนี้";
+    header("location: project-list.php");
+    exit;
+}
+
 // ตั้งค่าตัวแปรสำหรับข้อความแจ้งเตือน
 $message = '';
 $error = '';
 
-// ดึงข้อมูล session ที่จำเป็น
-$user_id = $_SESSION['user_id'];
-$username = $_SESSION['username'];
-$user_email = $_SESSION['email'];
-$user_role = $_SESSION['role'];
-$user_department = $_SESSION['department'];
-
 // จัดการการส่งฟอร์ม
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // เพิ่ม logging
-        error_log("เริ่มการบันทึกโครงการใหม่...");
-
         // รับข้อมูลจากฟอร์ม
         $project_code = trim($_POST['project_code']);
         $project_name = trim($_POST['project_name']);
         $organization = trim($_POST['organization']);
         $project_manager = trim($_POST['project_manager']);
-        $budget = floatval($_POST['budget']); // แปลงเป็นตัวเลข
+        $budget = floatval($_POST['budget']);
 
         // ตรวจสอบข้อมูลที่จำเป็น
         $required_fields = [
             'project_code' => 'รหัสโครงการ',
             'project_name' => 'ชื่อโครงการ',
-            'organization' => 'หน่วยงาน',
             'project_manager' => 'หัวหน้าโครงการ'
         ];
 
@@ -51,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // ตรวจสอบรหัสโครงการซ้ำ
-        $check_query = "SELECT COUNT(*) as count FROM projects WHERE project_code = ?";
+        // ตรวจสอบรหัสโครงการซ้ำ (ยกเว้นโครงการปัจจุบัน)
+        $check_query = "SELECT COUNT(*) as count FROM projects WHERE project_code = ? AND id != ?";
         $check_stmt = mysqli_prepare($conn, $check_query);
-        mysqli_stmt_bind_param($check_stmt, "s", $project_code);
+        mysqli_stmt_bind_param($check_stmt, "si", $project_code, $project_id);
         mysqli_stmt_execute($check_stmt);
         $result = mysqli_stmt_get_result($check_stmt);
         $row = mysqli_fetch_assoc($result);
@@ -66,42 +84,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         mysqli_begin_transaction($conn);
 
-        // บันทึกโครงการใหม่
+        // อัปเดตข้อมูลโครงการ
         $query = "
-            INSERT INTO projects (
-                project_code, name, budget, organization, 
-                project_manager, status, created_by
-            ) VALUES (?, ?, ?, ?, ?, 'incompleted', ?)
+            UPDATE projects 
+            SET project_code = ?, name = ?, budget = ?, organization = ?, 
+                project_manager = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND created_by = ?
         ";
 
         $stmt = mysqli_prepare($conn, $query);
         mysqli_stmt_bind_param(
             $stmt,
-            "ssdsss",
+            "ssdssis",
             $project_code,
             $project_name,
             $budget,
             $organization,
             $project_manager,
+            $project_id,
             $user_id
         );
 
         if (!mysqli_stmt_execute($stmt)) {
-            throw new Exception("เกิดข้อผิดพลาดในการบันทึกโครงการ: " . mysqli_error($conn));
+            throw new Exception("เกิดข้อผิดพลาดในการอัปเดตโครงการ: " . mysqli_error($conn));
         }
 
-        $project_id = mysqli_insert_id($conn);
         mysqli_stmt_close($stmt);
 
         // บันทึก log
-        $message = "สร้างโครงการใหม่: {$project_name} (รหัส: {$project_code})";
+        $log_message = "แก้ไขโครงการ: {$project_name} (รหัส: {$project_code})";
         $query = "
             INSERT INTO system_logs (log_level, module, message, user_id, project_id, timestamp)
             VALUES ('INFO', 'PROJECT', ?, ?, ?, NOW())
         ";
 
         $stmt = mysqli_prepare($conn, $query);
-        mysqli_stmt_bind_param($stmt, "sii", $message, $user_id, $project_id);
+        mysqli_stmt_bind_param($stmt, "sii", $log_message, $user_id, $project_id);
 
         if (!mysqli_stmt_execute($stmt)) {
             throw new Exception("เกิดข้อผิดพลาดในการบันทึก log: " . mysqli_error($conn));
@@ -109,20 +127,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($stmt);
 
         mysqli_commit($conn);
-        $_SESSION['success_message'] = "สร้างโครงการ '{$project_name}' เรียบร้อยแล้ว";
+        $_SESSION['success_message'] = "แก้ไขโครงการ '{$project_name}' เรียบร้อยแล้ว";
 
-        // Redirect ไปที่หน้ารายการโครงการ
-        header("Location: project-list.php");
+        // Redirect กลับไปยัง dashboard
+        header("Location: dashboard.php");
         exit();
     } catch (Exception $e) {
         mysqli_rollback($conn);
         $error = $e->getMessage();
     }
 
-    // ปิดการเชื่อมต่อ statement ที่อาจค้างอยู่
-    if (isset($stmt)) {
-        mysqli_stmt_close($stmt);
-    }
+    // Statement ถูกปิดไปแล้วใน code ข้างบน
 }
 ?>
 
@@ -132,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สร้างโครงการใหม่ - SROI System</title>
+    <title>แก้ไขโครงการ - <?php echo htmlspecialchars($project['name']); ?></title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -226,19 +241,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .nav-link.active {
             background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
             color: white;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
         }
 
         /* Main Content */
@@ -533,7 +535,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <li><a href="reports.php" class="nav-link">📄 รายงาน</a></li>
                 <li><a href="settings.php" class="nav-link">⚙️ ตั้งค่า</a></li>
             </ul>
-            <?php include 'user-menu.php'; ?>
+            <?php 
+            if (file_exists('user-menu.php')) {
+                include 'user-menu.php'; 
+            } else {
+                echo '<div class="user-avatar">' . substr($_SESSION['username'], 0, 1) . '</div>';
+            }
+            ?>
         </div>
     </nav>
 
@@ -548,16 +556,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span>›</span>
                 <a href="project-list.php">📋 โครงการ</a>
                 <span>›</span>
-                <span>สร้างโครงการใหม่</span>
+                <a href="project-detail.php?id=<?php echo $project_id; ?>">รายละเอียดโครงการ</a>
+                <span>›</span>
+                <span>แก้ไขโครงการ</span>
             </div>
-            <h1 class="page-title">สร้างโครงการใหม่</h1>
-            <p class="page-subtitle">เริ่มต้นการประเมินผลกระทบทางสังคม (SROI)</p>
+            <h1 class="page-title">แก้ไขโครงการ</h1>
+            <p class="page-subtitle"><?php echo htmlspecialchars($project['name']); ?></p>
         </div>
 
         <!-- Form Container -->
         <div class="form-container">
             <h2 class="form-title">
-                📝 ข้อมูลโครงการ
+                ✏️ แก้ไขข้อมูลโครงการ
             </h2>
 
             <!-- Alert Messages -->
@@ -574,27 +584,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <!-- Form -->
-            <form method="POST" id="createProjectForm">
+            <form method="POST" id="editProjectForm">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">
                             รหัสโครงการ <span class="required">*</span>
                         </label>
-                        <input type="number" class="form-input" id="project_code" name="project_code"
+                        <input type="text" class="form-input" id="project_code" name="project_code"
                             placeholder="กรอกรหัสโครงการ" required maxlength="9"
-                            value="<?php echo htmlspecialchars($_POST['project_code'] ?? ''); ?>">
+                            value="<?php echo htmlspecialchars($project['project_code']); ?>">
                         <div class="form-help">กรอกตัวเลขเท่านั้น (สูงสุด 9 หลัก)</div>
                         <div class="form-error">กรุณากรอกรหัสโครงการ</div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">
-                            หน่วยงาน <span class="required">*</span>
+                            หน่วยงาน
                         </label>
                         <input type="text" class="form-input" id="organization" name="organization"
-                            placeholder="หน่วยงาน" required maxlength="300" readonly
-                            value="<?php echo htmlspecialchars($user_department); ?>">
-                        <div class="form-help">หน่วยงานจากข้อมูลผู้ใช้ (สูงสุด 300 ตัวอักษร)</div>
+                            placeholder="หน่วยงาน" maxlength="300" readonly
+                            value="<?php echo htmlspecialchars($project['organization']); ?>">
+                        <div class="form-help">หน่วยงานจากข้อมูลผู้ใช้ (ไม่สามารถแก้ไขได้)</div>
                     </div>
 
                     <div class="form-group full-width">
@@ -603,7 +613,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
                         <input type="text" class="form-input" id="project_name" name="project_name"
                             placeholder="ชื่อโครงการภาษาไทย" required maxlength="500"
-                            value="<?php echo htmlspecialchars($_POST['project_name'] ?? ''); ?>">
+                            value="<?php echo htmlspecialchars($project['name']); ?>">
                         <div class="form-help">ชื่อโครงการเต็ม (สูงสุด 500 ตัวอักษร)</div>
                         <div class="form-error">กรุณากรอกชื่อโครงการ</div>
                     </div>
@@ -614,7 +624,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
                         <input type="text" class="form-input" id="project_manager" name="project_manager"
                             placeholder="ชื่อ-นามสกุล หัวหน้าโครงการ" required maxlength="200"
-                            value="<?php echo htmlspecialchars($_POST['project_manager'] ?? ''); ?>">
+                            value="<?php echo htmlspecialchars($project['project_manager']); ?>">
                         <div class="form-help">ชื่อเต็มของหัวหน้าโครงการ (สูงสุด 200 ตัวอักษร)</div>
                         <div class="form-error">กรุณากรอกชื่อหัวหน้าโครงการ</div>
                     </div>
@@ -625,18 +635,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
                         <input type="number" class="form-input" id="budget" name="budget"
                             placeholder="0" min="0" step="0.01" required
-                            value="<?php echo htmlspecialchars($_POST['budget'] ?? ''); ?>">
+                            value="<?php echo htmlspecialchars($project['budget']); ?>">
                         <div class="form-help">งบประมาณรวมของโครงการ (กรอกเฉพาะตัวเลข)</div>
                         <div class="form-error">กรุณากรอกงบประมาณ</div>
                     </div>
-
                 </div>
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="goBack()">
+                    <a href="project-detail.php?id=<?php echo $project_id; ?>" class="btn btn-secondary">
                         ← ยกเลิก
-                    </button>
+                    </a>
 
                     <div class="loading" id="loadingSpinner">
                         <div class="spinner"></div>
@@ -644,7 +653,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <button type="submit" class="btn btn-primary" id="submitBtn">
-                        💾 บันทึกข้อมูล
+                        💾 บันทึกการแก้ไข
                     </button>
                 </div>
             </form>
@@ -654,7 +663,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         // Form validation and submission
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('createProjectForm');
+            const form = document.getElementById('editProjectForm');
             const submitBtn = document.getElementById('submitBtn');
             const loading = document.getElementById('loadingSpinner');
 
@@ -700,6 +709,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const errorElement = formGroup.querySelector('.form-error');
                     if (!/^\d+$/.test(value) && value.length > 0) {
                         errorElement.textContent = 'รหัสโครงการต้องเป็นตัวเลขเท่านั้น';
+                    } else if (value.length > 9) {
+                        errorElement.textContent = 'รหัสโครงการสูงสุด 9 หลัก';
                     } else {
                         errorElement.textContent = 'กรุณากรอกรหัสโครงการ';
                     }
@@ -715,13 +726,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // ตรวจสอบหน่วยงาน
-            if (field.name === 'organization') {
-                if (field.value.trim().length > 300) {
-                    formGroup.classList.add('error');
-                    return false;
-                }
-            }
 
             // ตรวจสอบหัวหน้าโครงการ
             if (field.name === 'project_manager') {
@@ -764,15 +768,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return isValid;
         }
 
-        function goBack() {
-            if (confirm('คุณต้องการยกเลิกการสร้างโครงการหรือไม่? ข้อมูลที่กรอกจะไม่ถูกบันทึก')) {
-                window.location.href = 'project-list.php';
-            }
-        }
-
         // Check duplicate project code
         document.getElementById('project_code').addEventListener('blur', function() {
             const code = this.value.trim();
+            const currentProjectId = <?php echo $project_id; ?>;
             if (code) {
                 fetch('api/check-project-code.php', {
                         method: 'POST',
@@ -780,7 +779,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            project_code: code
+                            project_code: code,
+                            exclude_id: currentProjectId
                         })
                     })
                     .then(response => response.json())
@@ -800,7 +800,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        console.log('🎯 Create Project Form initialized successfully!');
+        console.log('✏️ Edit Project Form initialized successfully!');
     </script>
 </body>
 

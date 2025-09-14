@@ -45,9 +45,6 @@
 
     $total_present_costs = array_sum($present_costs_by_year);
     $total_present_benefits = array_sum($present_benefits_by_year);
-    $sroi_ratio = calculateSROIRatio($total_present_benefits, $total_present_costs);
-    $npv = $total_present_benefits - $total_present_costs;
-    $sensitivity = calculateSensitivityAnalysis($sroi_ratio, 0.2);
 
     // คำนวณ Base Case Impact จากข้อมูลจริงในฐานข้อมูล
     $base_case_impact = 0;
@@ -78,11 +75,56 @@
 
     $net_social_benefit = $total_present_benefits - $base_case_impact;
 
-    // คำนวณ IRR (Internal Rate of Return) แบบง่าย
+    // คำนวณ NPV ใหม่ = ผลประโยชน์ปัจจุบันสุทธิ (Total Present Benefit) หลังหักลบกรณีฐาน (Base Case Impact)
+    $npv = 0;
+    foreach ($available_years as $year_index => $year) {
+        $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
+        $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
+
+        // คำนวณ Present Base Case Impact แต่ละปี
+        $year_present_base_case = 0;
+        foreach ($project_benefits as $benefit_number => $benefit) {
+            $benefit_amount = isset($benefit_notes_by_year[$benefit_number]) && isset($benefit_notes_by_year[$benefit_number][$year['year_be']])
+                ? floatval($benefit_notes_by_year[$benefit_number][$year['year_be']]) : 0;
+
+            $attribution_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                ? $base_case_factors[$benefit_number][$year['year_be']]['attribution'] : 0;
+            $deadweight_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                ? $base_case_factors[$benefit_number][$year['year_be']]['deadweight'] : 0;
+            $displacement_rate = isset($base_case_factors[$benefit_number]) && isset($base_case_factors[$benefit_number][$year['year_be']])
+                ? $base_case_factors[$benefit_number][$year['year_be']]['displacement'] : 0;
+
+            $attribution = $benefit_amount * ($attribution_rate / 100);
+            $deadweight = $benefit_amount * ($deadweight_rate / 100);
+            $displacement = $benefit_amount * ($displacement_rate / 100);
+
+            // คำนวณ Present Value ของ Base Case Impact
+            $impact_amount = $attribution + $deadweight + $displacement;
+            $present_impact = $impact_amount / pow(1 + ($saved_discount_rate / 100), $year_index);
+
+            $year_present_base_case += $present_impact;
+        }
+
+        // สูตร: รวมผลประโยชน์ปัจจุบันสุทธิ - ต้นทุนปัจจุบันสุทธิ - ผลกระทบกรณีฐานรวมปัจจุบัน
+        $result = $present_benefit - $present_cost - $year_present_base_case;
+        $npv += $result;
+    }
+
+    // คำนวณ SROI ใหม่ = (Total Present Benefit - Present Base Case Impact) ÷ Total Present Cost
+    $sroi_ratio = ($total_present_costs > 0) ? ($net_social_benefit / $total_present_costs) : 0;
+    $sensitivity = calculateSensitivityAnalysis($sroi_ratio, 0.2);
+
+    // คำนวณ IRR (Internal Rate of Return) โดยใช้ฟังก์ชันที่แท้จริง
     $irr = 'N/A';
-    if ($total_present_costs > 0) {
+    if ($total_present_costs > 0 && $net_social_benefit > 0) {
+        $cash_flows = [-$total_present_costs]; // Initial investment (negative)
         $annual_net_benefit = $net_social_benefit / count($available_years);
-        $estimated_irr = (($annual_net_benefit / $total_present_costs) * 100);
+        for ($i = 0; $i < count($available_years); $i++) {
+            $cash_flows[] = $annual_net_benefit; // Annual returns
+        }
+        
+        // Simple IRR approximation
+        $estimated_irr = (($net_social_benefit / $total_present_costs) - 1) * 100 / count($available_years);
         if ($estimated_irr > 0) {
             $irr = number_format($estimated_irr, 2) . '%';
         }

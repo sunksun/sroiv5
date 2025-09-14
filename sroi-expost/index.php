@@ -436,12 +436,6 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                                 <tr class="benefit-row">
                                     <td>
                                         <?php echo htmlspecialchars($benefit['detail']); ?>
-                                        <?php if ($benefit['beneficiary']): ?>
-                                            <br><small>ผู้รับ: <?php echo htmlspecialchars($benefit['beneficiary']); ?></small>
-                                        <?php endif; ?>
-                                        <?php if (isset($benefit['source_type'])): ?>
-                                            <br><small class="source-type">(<?php echo $benefit['source_type'] == 'legacy' ? 'Legacy' : 'New Chain'; ?>)</small>
-                                        <?php endif; ?>
                                     </td>
                                     <?php foreach ($available_years as $year): ?>
                                         <td>

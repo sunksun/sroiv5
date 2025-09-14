@@ -347,20 +347,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div class="col-md-6">
                         <label for="department" class="form-label">คณะ *</label>
                         <select class="form-select" id="department" name="department" required>
-                            <option value="">เลือกคณะ</option>
-                            <?php
-                            $departments = [
-                                "คณะครุศาสตร์",
-                                "คณะวิทยาศาสตร์และเทคโนโลยี",
-                                "คณะมนุษยศาสตร์และสังคมศาสตร์",
-                                "คณะวิทยาการจัดการ",
-                                "คณะเทคโนโลยีอุตสาหกรรม"
-                            ];
-                            foreach ($departments as $dept) {
-                                $selected = ($user['department'] == $dept) ? 'selected' : '';
-                                echo "<option value=\"" . htmlspecialchars($dept) . "\" $selected>" . htmlspecialchars($dept) . "</option>";
-                            }
-                            ?>
+                            <option value="">เลือกคณะ/หน่วยงาน</option>
+                            
+                            <optgroup label="คณะ">
+                                <?php
+                                $faculties = [
+                                    "คณะครุศาสตร์",
+                                    "คณะวิทยาศาสตร์และเทคโนโลยี",
+                                    "คณะมนุษยศาสตร์และสังคมศาสตร์",
+                                    "คณะวิทยาการจัดการ",
+                                    "คณะเทคโนโลยีอุตสาหกรรม"
+                                ];
+                                foreach ($faculties as $faculty) {
+                                    $selected = ($user['department'] == $faculty) ? 'selected' : '';
+                                    echo "<option value=\"" . htmlspecialchars($faculty) . "\" $selected>" . htmlspecialchars($faculty) . "</option>";
+                                }
+                                ?>
+                            </optgroup>
+                            
+                            <optgroup label="หน่วยงาน">
+                                <?php
+                                $units = [
+                                    "กองกลาง สำนักงานอธิการบดี",
+                                    "กองนโยบายและแผน",
+                                    "กองพัฒนานักศึกษา",
+                                    "สำนักวิทยบริการและเทคโนโลยีสารสนเทศ",
+                                    "สำนักส่งเสริมและงานทะเบียน",
+                                    "ศูนย์การศึกษามหาวิทยาลัยราชภัฏเลย จังหวัดขอนแก่น",
+                                    "สำนักศิลปะและวัฒนธรรม",
+                                    "โรงเรียนสาธิตมหาวิทยาลัยราชภัฏเลย",
+                                    "ศูนย์บ่มเพาะวิสาหกิจ (UBI)"
+                                ];
+                                foreach ($units as $unit) {
+                                    $selected = ($user['department'] == $unit) ? 'selected' : '';
+                                    echo "<option value=\"" . htmlspecialchars($unit) . "\" $selected>" . htmlspecialchars($unit) . "</option>";
+                                }
+                                ?>
+                            </optgroup>
                         </select>
                         <div class="invalid-feedback">กรุณาเลือกคณะ</div>
                     </div>

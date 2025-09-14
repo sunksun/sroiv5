@@ -20,7 +20,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['role'] = $row['role'];
             $_SESSION['department'] = $row['department'];
             $_SESSION['created_at'] = $row['created_at'];
-            header("location: dashboard.php");
+            
+            // Redirect based on role
+            if ($row['role'] == 'admin') {
+                header("location: admin/index.php");
+            } else {
+                header("location: dashboard.php");
+            }
         } else {
             $login_err = "รหัสผ่านไม่ถูกต้อง";
         }

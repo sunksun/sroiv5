@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Sep 10, 2025 at 10:07 AM
+-- Generation Time: Sep 13, 2025 at 09:34 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -367,7 +367,72 @@ INSERT INTO `audit_logs` (`id`, `table_name`, `record_id`, `action`, `old_values
 (258, 'project_activities', '69', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 3, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-09 08:16:46'),
 (259, 'project_outputs', '80', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 6, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-09 08:16:55'),
 (260, 'project_activities', '70', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 4, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-09 08:29:07'),
-(261, 'project_outputs', '81', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 10, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-09 08:29:18');
+(261, 'project_outputs', '81', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 10, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-09 08:29:18'),
+(262, 'project_strategies', '38', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 15:12:50'),
+(263, 'project_activities', '71', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 3, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 15:13:03'),
+(264, 'project_outputs', '82', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 6, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 15:13:22'),
+(265, 'project_strategies', '39', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:00:22'),
+(266, 'project_activities', '72', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 3, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:00:37'),
+(267, 'project_outputs', '83', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 6, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:00:46'),
+(268, 'project_activities', '73', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 4, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:03:03'),
+(269, 'project_outputs', '84', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 9, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:03:12'),
+(270, 'project_activities', '74', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 5, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:04:43'),
+(271, 'project_outputs', '85', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 12, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-10 16:04:51'),
+(272, 'project_strategies', '40', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:54:00'),
+(273, 'project_activities', '75', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 7, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:54:12'),
+(274, 'project_outputs', '86', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 15, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:54:21'),
+(275, 'project_activities', '76', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:55:55'),
+(276, 'project_outputs', '87', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:56:05'),
+(277, 'project_activities', '77', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 10, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:57:15'),
+(278, 'project_outputs', '88', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 19, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 07:57:22'),
+(279, 'project_strategies', '41', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 09:10:10'),
+(280, 'project_activities', '78', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 09:10:21'),
+(281, 'project_outputs', '89', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 09:10:28'),
+(282, 'project_activities', '79', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 3, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 09:12:01'),
+(283, 'project_outputs', '90', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 6, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-11 09:12:12'),
+(284, 'project_strategies', '42', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 06:50:21'),
+(285, 'project_activities', '80', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 06:50:28'),
+(286, 'project_outputs', '91', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 06:50:36'),
+(287, 'project_strategies', '43', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 06:57:25'),
+(288, 'project_activities', '81', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 06:57:32'),
+(289, 'project_outputs', '92', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 06:57:39'),
+(290, 'project_strategies', '44', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:03:03'),
+(291, 'project_activities', '82', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:03:10'),
+(292, 'project_outputs', '93', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:03:16'),
+(293, 'project_strategies', '45', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:06:37'),
+(294, 'project_activities', '83', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:06:43'),
+(295, 'project_outputs', '94', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:06:49'),
+(296, 'project_strategies', '46', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:13:26');
+INSERT INTO `audit_logs` (`id`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `changed_fields`, `user_id`, `ip_address`, `user_agent`, `session_id`, `timestamp`) VALUES
+(297, 'project_activities', '84', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 3, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:13:34'),
+(298, 'project_outputs', '95', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 6, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 07:13:40'),
+(299, 'project_strategies', '47', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:25:32'),
+(300, 'project_activities', '85', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:25:38'),
+(301, 'project_outputs', '96', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:25:44'),
+(302, 'project_strategies', '48', 'INSERT', NULL, '{\"project_id\": 6, \"strategy_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:43:36'),
+(303, 'project_activities', '86', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 1, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:43:43'),
+(304, 'project_outputs', '97', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 2, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:43:50'),
+(305, 'project_activities', '87', 'INSERT', NULL, '{\"project_id\": 6, \"activity_id\": 3, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:45:55'),
+(306, 'project_outputs', '98', 'INSERT', NULL, '{\"project_id\": 6, \"output_id\": 6, \"created_by\": \"3\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-12 08:46:02'),
+(307, 'projects', '7', 'INSERT', NULL, '{\"project_code\": \"681234569\", \"name\": \"การพัฒนานวัตกรการศึกษาด้วย Mobile Application\", \"status\": \"incompleted\", \"budget\": 70000.00, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:11:51'),
+(308, 'projects', '7', 'UPDATE', '{\"name\": \"การพัฒนานวัตกรการศึกษาด้วย Mobile Application\", \"status\": \"incompleted\", \"budget\": 70000.00}', '{\"name\": \"การพัฒนานวัตกรการศึกษาด้วย Mobile Application\", \"status\": \"incompleted\", \"budget\": 75000.00}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:18:38'),
+(309, 'projects', '8', 'INSERT', NULL, '{\"project_code\": \"682121222\", \"name\": \"การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชันการเรียนรู้ด้วย React Native สำหรับครูและบุคลากรทางการศึกษา\", \"status\": \"incompleted\", \"budget\": 50000.00, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:26:28'),
+(310, 'projects', '9', 'INSERT', NULL, '{\"project_code\": \"123456789\", \"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง\", \"status\": \"incompleted\", \"budget\": 75000.00, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:31:47'),
+(311, 'projects', '9', 'UPDATE', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง\", \"status\": \"incompleted\", \"budget\": 75000.00}', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง0\", \"status\": \"incompleted\", \"budget\": 75001.00}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:40:19'),
+(312, 'projects', '9', 'UPDATE', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง0\", \"status\": \"incompleted\", \"budget\": 75001.00}', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง\", \"status\": \"incompleted\", \"budget\": 75000.00}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:41:39'),
+(313, 'projects', '9', 'UPDATE', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง\", \"status\": \"incompleted\", \"budget\": 75000.00}', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง8\", \"status\": \"incompleted\", \"budget\": 75008.00}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 04:42:56'),
+(314, 'projects', '9', 'UPDATE', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง8\", \"status\": \"incompleted\", \"budget\": 75008.00}', '{\"name\": \"โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง8\", \"status\": \"incompleted\", \"budget\": 75000.00}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:45:38'),
+(315, 'projects', '10', 'INSERT', NULL, '{\"project_code\": \"681111189\", \"name\": \"การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชันการเรียนรู้ด้วย React Native\", \"status\": \"incompleted\", \"budget\": 70000.00, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:52:36'),
+(316, 'project_strategies', '49', 'INSERT', NULL, '{\"project_id\": 10, \"strategy_id\": 1, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:53:42'),
+(317, 'project_activities', '88', 'INSERT', NULL, '{\"project_id\": 10, \"activity_id\": 1, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:53:49'),
+(318, 'project_outputs', '99', 'INSERT', NULL, '{\"project_id\": 10, \"output_id\": 2, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:54:04'),
+(319, 'project_activities', '89', 'INSERT', NULL, '{\"project_id\": 10, \"activity_id\": 23, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:58:06'),
+(320, 'project_outputs', '100', 'INSERT', NULL, '{\"project_id\": 10, \"output_id\": 43, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 06:58:29'),
+(321, 'project_strategies', '50', 'INSERT', NULL, '{\"project_id\": 10, \"strategy_id\": 1, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 07:07:23'),
+(322, 'project_activities', '90', 'INSERT', NULL, '{\"project_id\": 10, \"activity_id\": 1, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 07:07:30'),
+(323, 'project_outputs', '101', 'INSERT', NULL, '{\"project_id\": 10, \"output_id\": 2, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 07:07:36'),
+(324, 'project_activities', '91', 'INSERT', NULL, '{\"project_id\": 10, \"activity_id\": 1, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 07:09:20'),
+(325, 'project_outputs', '102', 'INSERT', NULL, '{\"project_id\": 10, \"output_id\": 3, \"created_by\": \"8\"}', NULL, NULL, NULL, NULL, NULL, '2025-09-13 07:09:45');
 
 -- --------------------------------------------------------
 
@@ -769,7 +834,7 @@ CREATE TABLE `projects` (
 --
 
 INSERT INTO `projects` (`id`, `project_code`, `name`, `description`, `objective`, `start_date`, `end_date`, `budget`, `organization`, `project_manager`, `status`, `created_by`, `created_at`, `updated_at`, `impact_chain_status`, `total_impact_chains`, `current_chain_id`) VALUES
-(6, '681234567', 'การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชัน', NULL, NULL, NULL, NULL, 70000.00, 'คณะวิทยาศาสตร์และเทคโนโลยี', 'สังสรรค์ หล้าพันธ์', 'incompleted', '3', '2025-08-28 13:02:48', '2025-09-09 08:29:46', '{\"step1_completed\":true,\"step2_completed\":true,\"step3_completed\":true,\"step4_completed\":true,\"current_step\":4,\"last_updated\":\"2025-09-09 10:29:46\"}', 0, NULL);
+(10, '681111189', 'การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชันการเรียนรู้ด้วย React Native', NULL, NULL, NULL, NULL, 70000.00, 'คณะวิทยาศาสตร์และเทคโนโลยี', 'สังสรรค์ หล้าพันธ์', 'incompleted', '8', '2025-09-13 06:52:36', '2025-09-13 07:31:02', '{\"step1_completed\":true,\"step2_completed\":true,\"step3_completed\":true,\"step4_completed\":true,\"current_step\":4,\"last_updated\":\"2025-09-13 09:31:02\"}', 0, NULL);
 
 --
 -- Triggers `projects`
@@ -822,9 +887,8 @@ CREATE TABLE `project_activities` (
 --
 
 INSERT INTO `project_activities` (`id`, `project_id`, `activity_id`, `chain_sequence`, `created_by`, `created_at`, `updated_at`, `act_details`) VALUES
-(68, 6, 1, 1, '3', '2025-09-09 08:15:22', '2025-09-09 08:15:22', 'พัฒนาความรู้/ทักษะ/ศักยภาพ/ทักษะอาชีพ'),
-(69, 6, 3, 2, '3', '2025-09-09 08:16:46', '2025-09-09 08:16:46', 'แปรรูปผลิตภัณฑ์/พัฒนาผลิตภัณฑ์ใหม่/ผลิตภัณฑ์สร้างสรรค์ (พัฒนาบรรจุภัณฑ์ โลโก้แบรนด์)'),
-(70, 6, 4, 3, '3', '2025-09-09 08:29:07', '2025-09-09 08:29:07', 'พัฒนามาตรฐานผลิตภัณฑ์');
+(90, 10, 1, 1, '8', '2025-09-13 07:07:30', '2025-09-13 07:07:30', 'พัฒนาความรู้/ทักษะ/ศักยภาพ/ทักษะอาชีพ'),
+(91, 10, 1, 2, '8', '2025-09-13 07:09:20', '2025-09-13 07:09:20', 'พัฒนาความรู้/ทักษะ/ศักยภาพ/ทักษะอาชีพ');
 
 --
 -- Triggers `project_activities`
@@ -885,9 +949,7 @@ CREATE TABLE `project_impact_ratios` (
 --
 
 INSERT INTO `project_impact_ratios` (`id`, `project_id`, `benefit_number`, `attribution`, `deadweight`, `displacement`, `impact_ratio`, `created_at`, `updated_at`, `benefit_detail`, `beneficiary`, `benefit_note`, `year`, `chain_sequence`) VALUES
-(118, 6, 1, 10.00, 20.00, 30.00, 0.4000, '2025-09-09 08:16:26', '2025-09-09 08:16:26', 'AAAA', 'BBBB', '200', '2568', 1),
-(120, 6, 2, 0.00, 0.00, 0.00, 1.0000, '2025-09-09 08:17:18', '2025-09-09 08:17:18', 'Z', 'X', 'ยังไม่มีรายได้เพิ่ม', '2568', 2),
-(122, 6, 3, 20.00, 10.00, 30.00, 0.4000, '2025-09-09 08:29:42', '2025-09-09 08:29:42', 'Q', 'W', '150', '2568', 3);
+(142, 10, 1, 3.00, 4.00, 5.00, 0.8800, '2025-09-13 07:08:04', '2025-09-13 07:08:04', 'ผลประโยชน์ 1', 'ผู้รับผลประโยชน์ 1', '1000', '2567', 1);
 
 -- --------------------------------------------------------
 
@@ -911,9 +973,8 @@ CREATE TABLE `project_outcomes` (
 --
 
 INSERT INTO `project_outcomes` (`id`, `project_id`, `outcome_id`, `chain_sequence`, `outcome_details`, `created_by`, `created_at`, `updated_at`) VALUES
-(113, 6, 1, 1, '1.1.1: กลุ่มเป้าหมาย จำนวน..........คน สามารถถ่ายทอดความรู้ เกี่ยวกับ.......................ให้กับ..................จำนวน..........คน (กลุ่ม/ชุมชน)', 3, '2025-09-09 08:16:06', '2025-09-09 08:16:06'),
-(114, 6, 11, 2, '1.1: รายได้เพิ่มขึ้นจาการขายผลิตภัณฑ์ใหม่ที่มีการพัฒนาบรรจุภัณฑ์ใหม่/โลโก้แบรนด์ใหม่ ได้แก่..........................................', 3, '2025-09-09 08:17:03', '2025-09-09 08:17:03'),
-(115, 6, 15, 3, '2.1: รายได้เพิ่มขึ้นจากการขายผลิตภัณฑ์แปรรูปที่ได้รับมาตรฐาน ได้แก่...........................................', 3, '2025-09-09 08:29:25', '2025-09-09 08:29:25');
+(135, 10, 1, 1, 'กลุ่มเป้าหมาย จำนวน..........คน สามารถถ่ายทอดความรู้ เกี่ยวกับ.......................ให้กับ..................จำนวน..........คน (กลุ่ม/ชุมชน)', 8, '2025-09-13 07:07:43', '2025-09-13 07:07:43'),
+(136, 10, 5, 2, 'กลุ่มเป้าหมาย จำนวน..........คน สามารถนำความรู้ความสามารถที่เกิดจากศักยภาพ ด้าน.......................มา....(ใช้ประโยชน์อย่างไร)....ทำให้สร้างรายได้เพิ่มขึ้น', 8, '2025-09-13 07:09:58', '2025-09-13 07:09:58');
 
 -- --------------------------------------------------------
 
@@ -937,9 +998,8 @@ CREATE TABLE `project_outputs` (
 --
 
 INSERT INTO `project_outputs` (`id`, `project_id`, `output_id`, `chain_sequence`, `output_details`, `created_by`, `created_at`, `updated_at`) VALUES
-(79, 6, 2, 1, 'กลุ่มเป้าหมาย จำนวน.........คน มีความรู้ ความเข้าใจ และทักษะ เกี่ยวกับ.....................', '3', '2025-09-09 08:15:56', '2025-09-09 08:15:56'),
-(80, 6, 6, 2, 'ผลิตภัณฑ์ใหม่ จำนวน..........1.........ผลิตภัณฑ์ ได้แก่..........1.............', '3', '2025-09-09 08:16:55', '2025-09-09 08:16:55'),
-(81, 6, 10, 3, 'ผลิตภัณฑ์แปรรูปได้มาตรฐาน...........จำนวน.......ผลิตภัณฑ์ (อย. , green product, มผช. ฯลฯ)', '3', '2025-09-09 08:29:18', '2025-09-09 08:29:18');
+(101, 10, 2, 1, 'กลุ่มเป้าหมาย จำนวน.........คน มีความรู้ ความเข้าใจ และทักษะ เกี่ยวกับ.....................', '8', '2025-09-13 07:07:36', '2025-09-13 07:07:36'),
+(102, 10, 3, 2, 'กลุ่มเป้าหมาย จำนวน.........คน มีศักยภาพ ด้าน.....................', '8', '2025-09-13 07:09:45', '2025-09-13 07:09:45');
 
 --
 -- Triggers `project_outputs`
@@ -976,7 +1036,7 @@ CREATE TABLE `project_strategies` (
 --
 
 INSERT INTO `project_strategies` (`id`, `project_id`, `strategy_id`, `created_by`, `created_at`, `updated_at`) VALUES
-(37, 6, 1, '3', '2025-09-09 08:15:13', '2025-09-09 08:15:13');
+(50, 10, 1, '8', '2025-09-13 07:07:23', '2025-09-13 07:07:23');
 
 --
 -- Triggers `project_strategies`
@@ -1354,7 +1414,21 @@ INSERT INTO `system_logs` (`id`, `log_level`, `module`, `message`, `context`, `u
 (11, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: การอบรมทักษะ AI (รหัส: 681234568)', NULL, 8, 3, NULL, '2025-08-27 03:01:08'),
 (12, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: พัฒนาเว็บแอพพลิเคชัน AI (รหัส: 671011123)', NULL, 8, 4, NULL, '2025-08-27 03:43:36'),
 (13, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: พัฒนา AI (รหัส: 6721212123)', NULL, 8, 5, NULL, '2025-08-27 04:06:00'),
-(14, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชัน (รหัส: 681234567)', NULL, 3, 6, NULL, '2025-08-28 13:02:48');
+(14, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชัน (รหัส: 681234567)', NULL, 3, 6, NULL, '2025-08-28 13:02:48'),
+(15, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: การพัฒนานวัตกรการศึกษาด้วย Mobile Application (รหัส: 681234569)', NULL, 8, 7, NULL, '2025-09-13 04:11:51'),
+(16, 'INFO', 'PROJECT', 'แก้ไขโครงการ: การพัฒนานวัตกรการศึกษาด้วย Mobile Application (รหัส: 681234570)', NULL, 8, 7, NULL, '2025-09-13 04:15:39'),
+(17, 'INFO', 'PROJECT', 'แก้ไขโครงการ: การพัฒนานวัตกรการศึกษาด้วย Mobile Application (รหัส: 681234570)', NULL, 8, 7, NULL, '2025-09-13 04:15:45'),
+(18, 'INFO', 'PROJECT', 'แก้ไขโครงการ: การพัฒนานวัตกรการศึกษาด้วย Mobile Application (รหัส: 681234570)', NULL, 8, 7, NULL, '2025-09-13 04:16:01'),
+(19, 'INFO', 'PROJECT', 'แก้ไขโครงการ: การพัฒนานวัตกรการศึกษาด้วย Mobile Application (รหัส: 681234570)', NULL, 8, 7, NULL, '2025-09-13 04:16:08'),
+(20, 'INFO', 'PROJECT', 'แก้ไขโครงการ: การพัฒนานวัตกรการศึกษาด้วย Mobile Application (รหัส: 681234570)', NULL, 8, 7, NULL, '2025-09-13 04:18:38'),
+(21, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชันการเรียนรู้ด้วย React Native สำหรับครูและบุคลากรทางการศึกษา (รหัส: 682121222)', NULL, 8, 8, NULL, '2025-09-13 04:26:28'),
+(22, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง (รหัส: 123456789)', NULL, 8, 9, NULL, '2025-09-13 04:31:47'),
+(23, 'INFO', 'PROJECT', 'แก้ไขโครงการ: โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง0 (รหัส: 123456788)', NULL, 8, 9, NULL, '2025-09-13 04:40:19'),
+(24, 'INFO', 'PROJECT', 'แก้ไขโครงการ: โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง (รหัส: 123456789)', NULL, 8, 9, NULL, '2025-09-13 04:41:39'),
+(25, 'INFO', 'PROJECT', 'แก้ไขโครงการ: โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง8 (รหัส: 123456788)', NULL, 8, 9, NULL, '2025-09-13 04:42:56'),
+(26, 'INFO', 'PROJECT', 'แก้ไขโครงการ: โครงการพัฒนาศูนย์การเรียนรู้ด้านพลังงานเพื่อการพัฒนาการบริหารจัดการทรัพยากรชุมชนอย่าง8 (รหัส: 123456789)', NULL, 8, 9, NULL, '2025-09-13 06:45:38'),
+(27, 'INFO', 'PROJECT', 'สร้างโครงการใหม่: การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชันการเรียนรู้ด้วย React Native (รหัส: 681111189)', NULL, 8, 10, NULL, '2025-09-13 06:52:36'),
+(28, 'INFO', 'PROJECT', 'แก้ไขโครงการ: การพัฒนานวัตกรการศึกษาด้วย Mobile Application: เสริมสร้างทักษะการสร้างแอปพลิเคชันการเรียนรู้ด้วย React Native (รหัส: 681111189)', NULL, 8, 10, NULL, '2025-09-13 06:52:42');
 
 -- --------------------------------------------------------
 
@@ -1390,11 +1464,11 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `first_name`, `last_name`, `full_name_th`, `title`, `position`, `department`, `organization`, `phone`, `role`, `is_active`, `email_verified`, `last_login`, `login_count`, `created_at`, `updated_at`, `created_by`) VALUES
-(3, 'sunksun.lap', 'sunksun.lap@lru.ac.th', '$2y$10$8uas62T9NwlsSlIYJmU15.svZQYZcnz9jYc6PmocsJsPMm5.NndPm', NULL, NULL, 'นายสังสรรค์ หล้าพันธ์', NULL, NULL, 'คณะวิทยาศาสตร์และเทคโนโลยี', NULL, NULL, 'teacher', 1, 0, NULL, 0, '2025-07-30 16:33:27', '2025-07-30 16:33:27', NULL),
+(3, 'sunksun.lap', 'sunksun.lap@lru.ac.th', '$2y$10$8uas62T9NwlsSlIYJmU15.svZQYZcnz9jYc6PmocsJsPMm5.NndPm', NULL, NULL, 'นายสังสรรค์ หล้าพันธ์', NULL, NULL, 'คณะวิทยาศาสตร์และเทคโนโลยี', NULL, NULL, 'admin', 1, 0, NULL, 0, '2025-07-30 16:33:27', '2025-09-13 04:06:47', NULL),
 (5, 'manuttra.san', 'manuttra.san@lru.ac.th', '$2y$10$AW.YIZqZD62eL5y3SQhqLOlHawfp1kL4tkwNFvVxYp6u4XMk0YnZK', NULL, NULL, 'มานัตตา แสงสุวรรณ', NULL, NULL, 'คณะครุศาสตร์', NULL, NULL, 'teacher', 1, 0, NULL, 0, '2025-08-09 07:30:25', '2025-08-09 07:30:25', NULL),
 (6, 'test', 'test@test.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, 'ผู้ใช้ทดสอบ', NULL, NULL, NULL, NULL, NULL, 'teacher', 1, 0, NULL, 0, '2025-08-16 14:41:34', '2025-08-16 14:41:34', NULL),
 (7, 'admin.tec', 'jaruwan.lak@gmail.com', '$2y$10$VrbvEk1AB6g1biFb2SZx6egrIw67KdW/MsTqadK70RLpQYiXZf4lK', NULL, NULL, 'สุกัญญา มาสาย', NULL, NULL, 'คณะเทคโนโลยีอุตสาหกรรม', NULL, NULL, 'teacher', 1, 0, NULL, 0, '2025-08-24 03:32:31', '2025-08-24 03:32:31', NULL),
-(8, 'sujitra.mul', 'sujitra.mul@lru.ac.th', '$2y$10$.yO945.l/90ukHSfA8OAN.dWo0ZxGSK53wn.zMeAij0Of1MBdQJXy', NULL, NULL, 'สุจิตรา มังคละไชยา', NULL, NULL, 'กองกลาง สำนักงานอธิการบดี', NULL, NULL, 'teacher', 1, 0, NULL, 0, '2025-08-27 02:23:44', '2025-08-27 02:23:44', NULL);
+(8, 'sujitra.mul', 'sujitra.mul@lru.ac.th', '$2y$10$.yO945.l/90ukHSfA8OAN.dWo0ZxGSK53wn.zMeAij0Of1MBdQJXy', NULL, NULL, 'สุจิตรา มังคละไชยา', NULL, NULL, 'คณะวิทยาศาสตร์และเทคโนโลยี', NULL, NULL, 'teacher', 1, 0, NULL, 0, '2025-08-27 02:23:44', '2025-09-13 06:50:39', NULL);
 
 -- --------------------------------------------------------
 
@@ -1668,7 +1742,7 @@ ALTER TABLE `activities`
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=262;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=326;
 
 --
 -- AUTO_INCREMENT for table `impact_chains`
@@ -1722,49 +1796,49 @@ ALTER TABLE `present_value_factors`
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `project_activities`
 --
 ALTER TABLE `project_activities`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- AUTO_INCREMENT for table `project_costs`
 --
 ALTER TABLE `project_costs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `project_impact_ratios`
 --
 ALTER TABLE `project_impact_ratios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=144;
 
 --
 -- AUTO_INCREMENT for table `project_outcomes`
 --
 ALTER TABLE `project_outcomes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=116;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=139;
 
 --
 -- AUTO_INCREMENT for table `project_outputs`
 --
 ALTER TABLE `project_outputs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 
 --
 -- AUTO_INCREMENT for table `project_strategies`
 --
 ALTER TABLE `project_strategies`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `project_with_without`
 --
 ALTER TABLE `project_with_without`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `proxies`
@@ -1782,7 +1856,7 @@ ALTER TABLE `pvf_sets`
 -- AUTO_INCREMENT for table `social_impact_pathway`
 --
 ALTER TABLE `social_impact_pathway`
-  MODIFY `pathway_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `pathway_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `strategies`
@@ -1794,7 +1868,7 @@ ALTER TABLE `strategies`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `users`

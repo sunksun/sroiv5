@@ -191,15 +191,38 @@ try {
 
     error_log("process-step4.php: All validations passed, proceeding to save outcome data");
 
-    // บันทึกการเลือกผลลัพธ์ใหม่ พร้อม chain_sequence - สร้างแถวใหม่เสมอ
-    $insert_query = "INSERT INTO project_outcomes (project_id, outcome_id, chain_sequence, outcome_details, created_by) VALUES (?, ?, ?, ?, ?)";
-    $insert_stmt = mysqli_prepare($conn, $insert_query);
-    mysqli_stmt_bind_param($insert_stmt, 'iiisi', $project_id, $selected_outcome, $chain_sequence, $outcome_details, $user_id);
+    // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
+    $check_existing_query = "SELECT id FROM project_outcomes WHERE project_id = ? AND outcome_id = ? AND chain_sequence = ?";
+    $check_existing_stmt = mysqli_prepare($conn, $check_existing_query);
+    mysqli_stmt_bind_param($check_existing_stmt, 'iii', $project_id, $selected_outcome, $chain_sequence);
+    mysqli_stmt_execute($check_existing_stmt);
+    $existing_result = mysqli_stmt_get_result($check_existing_stmt);
+    $existing_outcome = mysqli_fetch_assoc($existing_result);
+    mysqli_stmt_close($check_existing_stmt);
     
-    if (!mysqli_stmt_execute($insert_stmt)) {
-        throw new Exception("เกิดข้อผิดพลาดในการบันทึกผลลัพธ์: " . $outcome['outcome_description']);
+    if ($existing_outcome) {
+        // อัปเดตข้อมูลที่มีอยู่
+        $update_query = "UPDATE project_outcomes SET outcome_details = ?, updated_at = CURRENT_TIMESTAMP WHERE project_id = ? AND outcome_id = ? AND chain_sequence = ?";
+        $update_stmt = mysqli_prepare($conn, $update_query);
+        mysqli_stmt_bind_param($update_stmt, 'siii', $outcome_details, $project_id, $selected_outcome, $chain_sequence);
+        
+        if (!mysqli_stmt_execute($update_stmt)) {
+            throw new Exception("เกิดข้อผิดพลาดในการอัปเดตผลลัพธ์: " . mysqli_error($conn));
+        }
+        mysqli_stmt_close($update_stmt);
+        error_log("process-step4.php: Updated existing outcome for project_id=$project_id, outcome_id=$selected_outcome, chain_sequence=$chain_sequence");
+    } else {
+        // บันทึกข้อมูลใหม่
+        $insert_query = "INSERT INTO project_outcomes (project_id, outcome_id, chain_sequence, outcome_details, created_by) VALUES (?, ?, ?, ?, ?)";
+        $insert_stmt = mysqli_prepare($conn, $insert_query);
+        mysqli_stmt_bind_param($insert_stmt, 'iiisi', $project_id, $selected_outcome, $chain_sequence, $outcome_details, $user_id);
+        
+        if (!mysqli_stmt_execute($insert_stmt)) {
+            throw new Exception("เกิดข้อผิดพลาดในการบันทึกผลลัพธ์: " . mysqli_error($conn));
+        }
+        mysqli_stmt_close($insert_stmt);
+        error_log("process-step4.php: Inserted new outcome for project_id=$project_id, outcome_id=$selected_outcome, chain_sequence=$chain_sequence");
     }
-    mysqli_stmt_close($insert_stmt);
 
     // ตรวจสอบว่ามี record ใน project_impact_ratios สำหรับ chain_sequence นี้หรือยัง
     $check_ratio_query = "SELECT id FROM project_impact_ratios WHERE project_id = ? AND chain_sequence = ?";
