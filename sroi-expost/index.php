@@ -417,6 +417,23 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
 
                 $calculated_irr = calculateIRR($cash_flows);
                 $irr = ($calculated_irr !== null) ? number_format($calculated_irr * 100, 2) . '%' : 'N/A';
+                
+                // เก็บค่าคำนวณทั้งหมดใน session สำหรับใช้ในหน้า report-sroi.php
+                if ($selected_project_id) {
+                    $_SESSION['sroi_data_' . $selected_project_id] = [
+                        'npv' => $npv,
+                        'sroi_ratio' => $sroi_ratio,
+                        'irr' => $irr,
+                        'total_present_costs' => $total_present_costs,
+                        'total_present_benefits' => $total_present_benefits,
+                        'net_social_benefit' => $net_social_benefit,
+                        'base_case_impact' => $base_case_impact,
+                        'total_costs' => $total_costs,
+                        'discount_rate' => $saved_discount_rate,
+                        'calculated_at' => time(),
+                        'project_name' => $selected_project['name'] ?? ''
+                    ];
+                }
                 ?>
 
                 <!-- Benefit Section -->

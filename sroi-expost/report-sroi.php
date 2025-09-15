@@ -1,7 +1,17 @@
 <?php
+// เปิดการแสดงข้อผิดพลาดสำหรับ debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
-// เชื่อมต่อฐานข้อมูล
-require_once '../config.php';
+
+// เชื่อมต่อฐานข้อมูลด้วย try-catch
+try {
+    require_once '../config.php';
+} catch (Exception $e) {
+    die("Database connection error: " . $e->getMessage());
+}
 
 // ดึงข้อมูลโครงการ
 $projects = [];
@@ -9,36 +19,57 @@ $selected_project = null;
 $project_id = $_GET['project_id'] ?? null;
 
 // ดึงรายการโครงการทั้งหมด
-$query = "SELECT id, project_code, name, description, budget, organization, project_manager, 
-                 start_date, end_date, YEAR(start_date) + 543 AS start_year_thai 
-          FROM projects 
-          ORDER BY created_at DESC";
-$result = mysqli_query($conn, $query);
-if ($result) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        $projects[] = $row;
+try {
+    $query = "SELECT id, project_code, name, description, budget, organization, project_manager, 
+                     start_date, end_date, YEAR(start_date) + 543 AS start_year_thai 
+              FROM projects 
+              ORDER BY created_at DESC";
+    $result = mysqli_query($conn, $query);
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $projects[] = $row;
+        }
+    } else {
+        throw new Exception("Query failed: " . mysqli_error($conn));
     }
+} catch (Exception $e) {
+    echo "Error fetching projects: " . $e->getMessage() . "<br>";
 }
 
 // ดึงข้อมูลโครงการที่เลือก
 $project_not_found = false;
 if ($project_id) {
-    $query = "SELECT id, project_code, name, description, objective, budget, organization, 
-                     project_manager, start_date, end_date, 
-                     YEAR(start_date) + 543 AS start_year_thai,
-                     YEAR(end_date) + 543 AS end_year_thai
-              FROM projects 
-              WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $query);
-    mysqli_stmt_bind_param($stmt, "i", $project_id);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $selected_project = mysqli_fetch_assoc($result);
+    try {
+        $query = "SELECT id, project_code, name, description, objective, budget, organization, 
+                         project_manager, start_date, end_date, 
+                         YEAR(start_date) + 543 AS start_year_thai,
+                         YEAR(end_date) + 543 AS end_year_thai
+                  FROM projects 
+                  WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $query);
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . mysqli_error($conn));
+        }
 
-    // ตรวจสอบว่าพบโครงการหรือไม่
-    if (!$selected_project) {
+        mysqli_stmt_bind_param($stmt, "i", $project_id);
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception("Execute failed: " . mysqli_stmt_error($stmt));
+        }
+
+        $result = mysqli_stmt_get_result($stmt);
+        $selected_project = mysqli_fetch_assoc($result);
+
+        // ตรวจสอบว่าพบโครงการหรือไม่
+        if (!$selected_project) {
+            $project_not_found = true;
+            $project_id = null; // รีเซ็ต project_id
+        }
+
+        mysqli_stmt_close($stmt);
+    } catch (Exception $e) {
+        echo "Error fetching selected project: " . $e->getMessage() . "<br>";
         $project_not_found = true;
-        $project_id = null; // รีเซ็ต project_id
+        $project_id = null;
     }
 }
 
@@ -120,132 +151,231 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sroi_irr = $_POST['sroi_irr'] ?? [];
 }
 
-// ดึงข้อมูล SROI เหมือนกับหน้า SROI Ex-post Analysis (คำนวณใหม่เสมอ)
+// ดึงข้อมูล SROI จาก session ก่อน หากไม่มีให้คำนวณใหม่ (Session + Fallback approach)
 $sroi_table_data = null;
+
+// ตั้งค่าเริ่มต้นสำหรับตัวแปรสำคัญ
+$saved_discount_rate = 2.50; // ค่าเริ่มต้น
+$available_years = [];
+
 if ($project_id) {
     $selected_project_id = $project_id;
+    $session_key = 'sroi_data_' . $project_id;
 
-    // ดึงข้อมูลต้นทุนและผลประโยชน์เหมือนกับใน index.php
-    $user_id = $_SESSION['user_id'] ?? 1;
+    // ลองดึงข้อมูลจาก session ก่อน
+    if (isset($_SESSION[$session_key])) {
+        $sroi_table_data = $_SESSION[$session_key];
+        // ตรวจสอบว่าข้อมูลใน session ยังใหม่อยู่หรือไม่ (ภายใน 1 ชั่วโมง)
+        $cache_timeout = 3600; // 1 ชั่วโมง
+        if ((time() - $sroi_table_data['calculated_at']) > $cache_timeout) {
+            $sroi_table_data = null; // ข้อมูลเก่าเกินไป ให้คำนวณใหม่
+        } else {
+            // ข้อมูลจาก session ใหม่อยู่
+            $data_source = 'session';
+            // ใช้ข้อมูลจาก session data
+            $saved_discount_rate = $sroi_table_data['discount_rate'] ?? $saved_discount_rate;
+            $available_years = $sroi_table_data['available_years'] ?? [];
 
-    // Get project costs
-    $project_costs = [];
-    $costs_query = "SELECT cost_name, yearly_amounts FROM project_costs WHERE project_id = ? ORDER BY id ASC";
-    $costs_stmt = mysqli_prepare($conn, $costs_query);
-    mysqli_stmt_bind_param($costs_stmt, 'i', $project_id);
-    mysqli_stmt_execute($costs_stmt);
-    $costs_result = mysqli_stmt_get_result($costs_stmt);
+            // โหลดข้อมูลผลประโยชน์สำหรับตารางที่ 3 แม้ว่าจะใช้ session data
+            try {
+                if (file_exists('includes/functions.php')) {
+                    require_once 'includes/functions.php';
+                    $project_benefits = getProjectBenefits($conn, $project_id);
 
-    while ($cost_row = mysqli_fetch_assoc($costs_result)) {
-        $yearly_data = json_decode($cost_row['yearly_amounts'], true);
-        $project_costs[] = [
-            'name' => $cost_row['cost_name'],
-            'amounts' => $yearly_data ?: []
-        ];
-    }
-
-    // Get project benefits using the function
-    if (file_exists('includes/functions.php')) {
-        require_once 'includes/functions.php';
-        $benefit_data = getProjectBenefits($conn, $project_id);
-        $project_benefits = $benefit_data; // เก็บข้อมูลทั้งหมด
-        $benefit_notes_by_year = $benefit_data['benefit_notes_by_year'];
-        $base_case_factors = $benefit_data['base_case_factors'];
-    } else {
-        $project_benefits = ['benefits' => [], 'benefit_notes_by_year' => [], 'base_case_factors' => []];
-        $benefit_notes_by_year = [];
-        $base_case_factors = [];
-    }
-
-    // Calculate base case impact
-    $base_case_impact = 0;
-
-    if (!empty($project_benefits['benefits']) && !empty($project_benefits['base_case_factors'])) {
-        foreach ($project_benefits['benefits'] as $benefit_number => $benefit) {
-            if (isset($project_benefits['base_case_factors'][$benefit_number])) {
-                foreach ($project_benefits['base_case_factors'][$benefit_number] as $year => $factors) {
-                    $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year])
-                        ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year]) : 0;
-
-                    // คำนวณ base case impact = attribution + deadweight + displacement
-                    $attribution = $benefit_amount * ($factors['attribution'] / 100);
-                    $deadweight = $benefit_amount * ($factors['deadweight'] / 100);
-                    $displacement = $benefit_amount * ($factors['displacement'] / 100);
-
-                    $impact_for_this_year = $attribution + $deadweight + $displacement;
-                    $base_case_impact += $impact_for_this_year;
+                    // ถ้า $available_years ว่างให้ดึงข้อมูลปีจาก database
+                    if (empty($available_years)) {
+                        $years_query = "SELECT year_be, year_display FROM years WHERE is_active = 1 ORDER BY sort_order ASC LIMIT 6";
+                        $years_result = mysqli_query($conn, $years_query);
+                        if ($years_result) {
+                            while ($year_row = mysqli_fetch_assoc($years_result)) {
+                                $available_years[] = $year_row;
+                            }
+                        }
+                    }
+                } else {
+                    echo "Warning: includes/functions.php not found<br>";
                 }
-            }
-        }
-    }
-
-    // เก็บค่า base_case_impact ที่คำนวณไว้ก่อนที่จะ include output-section.php
-    $calculated_base_case_impact = $base_case_impact;
-
-    // Get available years
-    $available_years = [];
-    $years_query = "SELECT year_id, year_be, year_ad, year_display, year_description, sort_order 
-                    FROM years WHERE is_active = 1 ORDER BY sort_order ASC";
-    $years_result = mysqli_query($conn, $years_query);
-    while ($year_row = mysqli_fetch_assoc($years_result)) {
-        $available_years[] = $year_row;
-    }
-
-    // Get discount rate  
-    $saved_discount_rate = 3.0;
-    $discount_query = "SELECT discount_rate FROM present_value_factors WHERE pvf_name = 'current' AND is_active = 1 LIMIT 1";
-    $discount_result = mysqli_query($conn, $discount_query);
-    if ($discount_result && mysqli_num_rows($discount_result) > 0) {
-        $row = mysqli_fetch_assoc($discount_result);
-        $saved_discount_rate = floatval($row['discount_rate']);
-    }
-
-    // Initialize variables for SROI calculations
-    $total_costs = 0;
-    $total_present_costs = 0;
-    $total_present_benefits = 0;
-    $net_social_benefit = 0;
-    $npv = 0;
-    $sroi_ratio = 0;
-    $irr = 'N/A';
-
-    // ถ้ามีข้อมูลต้นทุนหรือผลประโยชน์ ให้ include output-section เพื่อคำนวณ
-    if (!empty($project_costs) || !empty($project_benefits)) {
-        ob_start();
-        try {
-            include 'components/output-section.php';
-            $output_content = ob_get_clean();
-
-            // ใช้ค่า base_case_impact จาก output-section ที่คำนวณถูกต้อง
-            // $base_case_impact = $calculated_base_case_impact;
-
-            // ถ้ามีข้อมูล SROI จาก output-section ให้เก็บไว้
-            if (isset($sroi_ratio) && isset($npv)) {
-                $sroi_table_data = [
-                    'sroi_ratio' => $sroi_ratio ?? 0,
-                    'npv' => $npv ?? 0,
-                    'irr' => $irr ?? 'N/A',
-                    'total_present_costs' => $total_present_costs ?? 0,
-                    'total_present_benefits' => $total_present_benefits ?? 0,
-                    'base_case_impact' => $base_case_impact ?? 0,
-                    'net_social_benefit' => $net_social_benefit ?? 0,
-                    'saved_discount_rate' => $saved_discount_rate,
-                    'available_years' => $available_years,
-                    'investment_status' => ($sroi_ratio ?? 0) >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน',
-                    'npv_status' => ($npv ?? 0) >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0'
+            } catch (Exception $e) {
+                echo "Error loading functions or year data: " . $e->getMessage() . "<br>";
+                // ใช้ข้อมูลปีเริ่มต้นถ้าเกิดข้อผิดพลาด
+                $available_years = [
+                    ['year_be' => 2567, 'year_display' => '2567'],
+                    ['year_be' => 2568, 'year_display' => '2568'],
+                    ['year_be' => 2569, 'year_display' => '2569']
                 ];
             }
-        } catch (Exception $e) {
-            ob_get_clean();
-            $sroi_table_data = null;
-            // ใช้ค่าที่คำนวณไว้แม้เมื่อเกิด exception (ใช้ค่าจาก output-section)
-            // $base_case_impact = $calculated_base_case_impact;
         }
-    } else {
-        // ใช้ค่าที่คำนวณไว้เมื่อไม่มีข้อมูลสำหรับ include output-section
-        $base_case_impact = $calculated_base_case_impact ?? 0;
     }
-}
+
+    // หากไม่มีข้อมูลใน session หรือข้อมูลเก่า ให้คำนวณใหม่
+    if (!$sroi_table_data) {
+        $data_source = 'calculated';
+
+        try {
+            // ดึงข้อมูลต้นทุนและผลประโยชน์เหมือนกับใน index.php
+            $user_id = $_SESSION['user_id'] ?? 1;
+
+            // Get available years first
+            if (empty($available_years)) {
+                $years_query = "SELECT year_be, year_display FROM years WHERE is_active = 1 ORDER BY sort_order ASC LIMIT 6";
+                $years_result = mysqli_query($conn, $years_query);
+                if ($years_result) {
+                    while ($year_row = mysqli_fetch_assoc($years_result)) {
+                        $available_years[] = $year_row;
+                    }
+                }
+            }
+
+            // Get project costs
+            $project_costs = [];
+            $costs_query = "SELECT cost_name, yearly_amounts FROM project_costs WHERE project_id = ? ORDER BY id ASC";
+            $costs_stmt = mysqli_prepare($conn, $costs_query);
+            if (!$costs_stmt) {
+                throw new Exception("Failed to prepare cost query: " . mysqli_error($conn));
+            }
+
+            mysqli_stmt_bind_param($costs_stmt, 'i', $project_id);
+            mysqli_stmt_execute($costs_stmt);
+            $costs_result = mysqli_stmt_get_result($costs_stmt);
+
+            while ($cost_row = mysqli_fetch_assoc($costs_result)) {
+                $yearly_data = json_decode($cost_row['yearly_amounts'], true);
+                $project_costs[] = [
+                    'name' => $cost_row['cost_name'],
+                    'amounts' => $yearly_data ?: []
+                ];
+            }
+            mysqli_stmt_close($costs_stmt);
+
+            // Get project benefits using the function
+            if (file_exists('includes/functions.php')) {
+                require_once 'includes/functions.php';
+                $benefit_data = getProjectBenefits($conn, $project_id);
+                $project_benefits = $benefit_data; // เก็บข้อมูลทั้งหมด
+                $benefit_notes_by_year = $benefit_data['benefit_notes_by_year'] ?? [];
+                $base_case_factors = $benefit_data['base_case_factors'] ?? [];
+            } else {
+                $project_benefits = ['benefits' => [], 'benefit_notes_by_year' => [], 'base_case_factors' => []];
+                $benefit_notes_by_year = [];
+                $base_case_factors = [];
+            }
+        } catch (Exception $e) {
+            echo "Error in calculation section: " . $e->getMessage() . "<br>";
+            // ตั้งค่าเริ่มต้น
+            $project_costs = [];
+            $project_benefits = ['benefits' => [], 'benefit_notes_by_year' => [], 'base_case_factors' => []];
+            $benefit_notes_by_year = [];
+            $base_case_factors = [];
+        }
+
+        // Calculate base case impact
+        $base_case_impact = 0;
+
+        try {
+            if (!empty($project_benefits['benefits']) && !empty($project_benefits['base_case_factors'])) {
+                foreach ($project_benefits['benefits'] as $benefit_number => $benefit) {
+                    if (isset($project_benefits['base_case_factors'][$benefit_number])) {
+                        foreach ($project_benefits['base_case_factors'][$benefit_number] as $year => $factors) {
+                            $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year])
+                                ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year]) : 0;
+
+                            // คำนวณ base case impact = attribution + deadweight + displacement
+                            $attribution = $benefit_amount * (floatval($factors['attribution']) / 100);
+                            $deadweight = $benefit_amount * (floatval($factors['deadweight']) / 100);
+                            $displacement = $benefit_amount * (floatval($factors['displacement']) / 100);
+
+                            $impact_for_this_year = $attribution + $deadweight + $displacement;
+                            $base_case_impact += $impact_for_this_year;
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            echo "Error calculating base case impact: " . $e->getMessage() . "<br>";
+            $base_case_impact = 0;
+        }
+
+        // เก็บค่า base_case_impact ที่คำนวณไว้ก่อนที่จะ include output-section.php
+        $calculated_base_case_impact = $base_case_impact;
+
+        // Get discount rate first
+        $saved_discount_rate = 3.0;
+        try {
+            $discount_query = "SELECT discount_rate FROM present_value_factors WHERE pvf_name = 'current' AND is_active = 1 LIMIT 1";
+            $discount_result = mysqli_query($conn, $discount_query);
+            if ($discount_result && mysqli_num_rows($discount_result) > 0) {
+                $row = mysqli_fetch_assoc($discount_result);
+                $saved_discount_rate = floatval($row['discount_rate']);
+            }
+        } catch (Exception $e) {
+            echo "Error getting discount rate: " . $e->getMessage() . "<br>";
+            $saved_discount_rate = 3.0; // fallback value
+        }
+
+        // Initialize variables for SROI calculations
+        $total_costs = 0;
+        $total_present_costs = 0;
+        $total_present_benefits = 0;
+        $net_social_benefit = 0;
+        $npv = 0;
+        $sroi_ratio = 0;
+        $irr = 'N/A';
+
+        // ถ้ามีข้อมูลต้นทุนหรือผลประโยชน์ ให้ include output-section เพื่อคำนวณ
+        if (!empty($project_costs) || !empty($project_benefits)) {
+            ob_start();
+            try {
+                if (file_exists('components/output-section.php')) {
+                    include 'components/output-section.php';
+                } else {
+                    echo "Warning: components/output-section.php not found<br>";
+                }
+                $output_content = ob_get_clean();
+
+                // ใช้ค่า base_case_impact จาก output-section ที่คำนวณถูกต้อง
+                // $base_case_impact = $calculated_base_case_impact;
+
+                // ถ้ามีข้อมูล SROI จาก output-section ให้เก็บไว้
+                if (isset($sroi_ratio) && isset($npv)) {
+                    $sroi_table_data = [
+                        'sroi_ratio' => $sroi_ratio ?? 0,
+                        'npv' => $npv ?? 0,
+                        'irr' => $irr ?? 'N/A',
+                        'total_present_costs' => $total_present_costs ?? 0,
+                        'total_present_benefits' => $total_present_benefits ?? 0,
+                        'base_case_impact' => $base_case_impact ?? 0,
+                        'net_social_benefit' => $net_social_benefit ?? 0,
+                        'discount_rate' => $saved_discount_rate,
+                        'available_years' => $available_years,
+                        'investment_status' => ($sroi_ratio ?? 0) >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน',
+                        'npv_status' => ($npv ?? 0) >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0',
+                        'calculated_at' => time(),
+                        'project_name' => $selected_project['name'] ?? ''
+                    ];
+
+                    // เก็บข้อมูลใน session สำหรับการใช้งานครั้งต่อไป
+                    $_SESSION[$session_key] = $sroi_table_data;
+                    $data_source = 'calculated';
+                }
+            } catch (Exception $e) {
+                ob_get_clean();
+                echo "Error including output-section.php: " . $e->getMessage() . "<br>";
+                $sroi_table_data = null;
+                // ใช้ค่าเริ่มต้นเมื่อเกิด exception
+                $npv = 0;
+                $sroi_ratio = 0;
+                $irr = 'N/A';
+                $base_case_impact = $calculated_base_case_impact ?? 0;
+            }
+        } else {
+            // ใช้ค่าที่คำนวณไว้เมื่อไม่มีข้อมูลสำหรับ include output-section
+            $base_case_impact = $calculated_base_case_impact ?? 0;
+        }
+    } // จบ if (!$sroi_table_data) - fallback calculation
+} else {
+    // กรณีไม่มี project_id ให้ตั้งค่าเริ่มต้น
+    $available_years = [];
+} // จบ if ($project_id) - main project check
 ?>
 
 <!DOCTYPE html>
@@ -428,14 +558,27 @@ if ($project_id) {
                 <div class="section">
                     <h3>ข้อมูลทั่วไปของโครงการ</h3>
                     <p style="margin: 20px 0; line-height: 1.6;">
-                        โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '…………………………………….'; ?> ในพื้นที่ <input type="text" name="area_display" style="border: none; border-bottom: 1px solid #ddd; background: transparent; font-weight: bold; width: 400px; display: inline;" placeholder="กรอกพื้นที่" value="<?php echo $selected_project ? htmlspecialchars($selected_project['area'] ?? '') : ''; ?>"> ได้รับการจัดสรรงบประมาณ <?php echo $selected_project ? number_format($selected_project['budget']) : '…………………………..'; ?> บาท ดำเนินการ<input type="text" name="activities_display" style="border: none; border-bottom: 1px solid #ddd; background: transparent; font-weight: bold; width: 300px; display: inline;" placeholder="กรอกกิจกรรมที่ดำเนินการ" value="<?php echo $selected_project ? htmlspecialchars($selected_project['activities'] ?? '') : ''; ?>">ให้กับ<input type="text" name="target_group_display" style="border: none; border-bottom: 1px solid #ddd; background: transparent; font-weight: bold; width: 250px; display: inline;" placeholder="กรอกกลุ่มเป้าหมาย" value="<?php echo $selected_project ? htmlspecialchars($selected_project['target_group'] ?? '') : ''; ?>">
+                        โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '…………………………………….'; ?>
+                        ได้รับการจัดสรรงบประมาณ <?php echo $selected_project ? number_format($selected_project['budget']) : '…………………………..'; ?> บาท มีการดำเนินการดังนี้
                     </p>
+                    <div class="form-group">
+                        <label for="area_display">1. ดำเนินโครงการในพื้นที่:</label>
+                        <input type="text" id="area_display" name="area_display" placeholder="กรอกพื้นที่ดำเนินโครงการ" value="<?php echo $selected_project ? htmlspecialchars($selected_project['area'] ?? '') : ''; ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="activities_display">2. ดำเนินกิจกรรม:</label>
+                        <input type="text" id="activities_display" name="activities_display" placeholder="กรอกกิจกรรมที่ดำเนินการ" value="<?php echo $selected_project ? htmlspecialchars($selected_project['activities'] ?? '') : ''; ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="target_group_display">3. กลุ่มเป้าหมาย:</label>
+                        <input type="text" id="target_group_display" name="target_group_display" placeholder="กรอกกลุ่มเป้าหมาย" value="<?php echo $selected_project ? htmlspecialchars($selected_project['target_group'] ?? '') : ''; ?>">
+                    </div>
                 </div>
 
                 <div class="section">
                     <h3>การประเมินผลตอบแทนทางสังคม</h3>
                     <p style="margin: 20px 0; line-height: 1.6;">
-                        การประเมินผลตอบแทนทางสังคม (SROI) โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '.........................................'; ?> ทำการประเมินผลหลังโครงการเสร็จสิ้น (Ex-post Evaluation) ในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (หากเป็นโครงการต่อเนื่องให้ระบุปีที่ดำเนินการปีแรก) โดยใช้อัตราดอกเบี้ยพันธบัตรรัฐบาลในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> ร้อยละ <?php echo formatNumber($saved_discount_rate, 2); ?> เป็นอัตราคิดลด (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) และกำหนดให้ปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> เป็นปีฐาน (หากเป็นโครงการต่อเนื่องให้ระบุปีที่ดำเนินการปีแรกเป็นฐาน และอัตราดอกเบี้ยพันธบัตรรัฐบาลในปีนั้นๆ) มีขั้นตอนการดำเนินงาน ดังนี้
+                        การประเมินผลตอบแทนทางสังคม (SROI) โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '.........................................'; ?> ทำการประเมินผลหลังโครงการเสร็จสิ้น (Ex-post Evaluation) ในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (หากเป็นโครงการต่อเนื่องให้ระบุปีที่ดำเนินการปีแรก) โดยใช้อัตราดอกเบี้ยพันธบัตรรัฐบาลในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> ร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> เป็นอัตราคิดลด (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) และกำหนดให้ปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> เป็นปีฐาน (หากเป็นโครงการต่อเนื่องให้ระบุปีที่ดำเนินการปีแรกเป็นฐาน และอัตราดอกเบี้ยพันธบัตรรัฐบาลในปีนั้นๆ) มีขั้นตอนการดำเนินงาน ดังนี้
                     </p>
                     <div class="form-group">
                         <label for="step1">ขั้นตอนที่ 1:</label>
@@ -465,6 +608,20 @@ if ($project_id) {
                         </p>
                     </div>
 
+                    <?php if (isset($data_source)): ?>
+                        <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.9em; color: #1976d2;">
+                            <strong>🔍 Debug Info:</strong> ข้อมูล SROI ถูกโหลดจาก <?php echo $data_source == 'session' ? 'Session Cache' : 'คำนวณใหม่'; ?>
+                            <?php if ($data_source == 'session' && isset($sroi_table_data['calculated_at'])): ?>
+                                (คำนวณเมื่อ <?php echo date('H:i:s', $sroi_table_data['calculated_at']); ?>)
+                            <?php endif; ?>
+                            <?php if ($sroi_table_data): ?>
+                                <br><strong>Values:</strong> NPV: <?php echo number_format($sroi_table_data['npv'] ?? 0, 2); ?> |
+                                SROI: <?php echo number_format($sroi_table_data['sroi_ratio'] ?? 0, 2); ?> |
+                                IRR: <?php echo $sroi_table_data['irr'] ?? 'N/A'; ?>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
                     <!-- ซ่อน input fields และใช้ hidden inputs แทน -->
                     <input type="hidden" name="analysis_project" value="<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : ''; ?>">
                     <input type="hidden" name="impact_activities" value="<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : ''; ?>">
@@ -486,15 +643,24 @@ if ($project_id) {
                 <div class="section">
                     <h3>ตารางการเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
                     <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        echo str_replace('%', '', $sroi_table_data['irr']);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    } else {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        echo 'N/A';
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }                                                                                                                                                                                 ?></span> ซึ่ง<?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? (floatval(str_replace('%', '', $sroi_table_data['irr'])) < $saved_discount_rate ? 'น้อยกว่า' : 'มากกว่า') : 'เปรียบเทียบกับ'; ?>อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate, 2); ?> โดยมีรายละเอียด ดังนี้</p>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    echo str_replace('%', '', $sroi_table_data['irr']);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                } else {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    echo 'N/A';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }                                                                                                                                                                                 ?></span> ซึ่ง<?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? (floatval(str_replace('%', '', $sroi_table_data['irr'])) < $saved_discount_rate ? 'น้อยกว่า' : 'มากกว่า') : 'เปรียบเทียบกับ'; ?>อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate, 2); ?> โดยมีรายละเอียด ดังนี้</p>
 
-                    <p style="margin-bottom: 20px; line-height: 1.6;">จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span>
-                        <input type="text" style="border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; margin: 0 4px; min-width: 200px;" placeholder="เช่น นาย/นาง ชื่อ-นามสกุล ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน" />
-                        จำนวน <input type="number" style="border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; margin: 0 4px; width: 80px;" placeholder="0" min="1" /> คน/กลุ่ม สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1
+                    <p style="margin-bottom: 20px; line-height: 1.6;">จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> 
+                        สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1
                     </p>
+                    
+                    <div class="form-group">
+                        <label for="interviewee_name">ผู้ให้สัมภาษณ์:</label>
+                        <input type="text" id="interviewee_name" name="interviewee_name" placeholder="เช่น นาย/นาง ชื่อ-นามสกุล ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="interviewee_count">จำนวนผู้ให้สัมภาษณ์:</label>
+                        <input type="number" id="interviewee_count" name="interviewee_count" placeholder="0" min="1" style="width: 100px;" /> คน/กลุ่ม
+                    </div>
                     <h3>ตารางที่ 1 เปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
 
                     <?php
@@ -924,9 +1090,16 @@ if ($project_id) {
                                 <thead>
                                     <tr style="background: #667eea; color: white;">
                                         <th style="border: 2px solid #333; padding: 8px; text-align: center; width: 40%;">รายการ</th>
-                                        <?php foreach ($available_years as $year): ?>
-                                            <th style="border: 2px solid #333; padding: 8px; text-align: center;"><?php echo htmlspecialchars($year['year_display']); ?></th>
-                                        <?php endforeach; ?>
+                                        <?php
+                                        if (!empty($available_years)) {
+                                            foreach ($available_years as $year): ?>
+                                                <th style="border: 2px solid #333; padding: 8px; text-align: center;"><?php echo htmlspecialchars($year['year_display']); ?></th>
+                                        <?php
+                                            endforeach;
+                                        } else {
+                                            echo '<th style="border: 2px solid #333; padding: 8px; text-align: center;">ไม่มีข้อมูลปี</th>';
+                                        }
+                                        ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -950,18 +1123,25 @@ if ($project_id) {
                                                     echo " (Attribution " . number_format($attribution_avg, 1) . "%)";
                                                     ?>
                                                 </td>
-                                                <?php foreach ($available_years as $year): ?>
-                                                    <td style="border: 1px solid #333; padding: 6px; text-align: center;">
-                                                        <?php
-                                                        $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number]) && isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']])
-                                                            ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']]) : 0;
-                                                        $attribution_rate = isset($project_benefits['base_case_factors'][$benefit_number]) && isset($project_benefits['base_case_factors'][$benefit_number][$year['year_be']])
-                                                            ? $project_benefits['base_case_factors'][$benefit_number][$year['year_be']]['attribution'] : 0;
-                                                        $attribution = $benefit_amount * ($attribution_rate / 100);
-                                                        echo $attribution > 0 ? formatNumber($attribution, 0) : '-';
-                                                        ?>
-                                                    </td>
-                                                <?php endforeach; ?>
+                                                <?php
+                                                if (!empty($available_years)) {
+                                                    foreach ($available_years as $year): ?>
+                                                        <td style="border: 1px solid #333; padding: 6px; text-align: center;">
+                                                            <?php
+                                                            $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number]) && isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']])
+                                                                ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']]) : 0;
+                                                            $attribution_rate = isset($project_benefits['base_case_factors'][$benefit_number]) && isset($project_benefits['base_case_factors'][$benefit_number][$year['year_be']])
+                                                                ? $project_benefits['base_case_factors'][$benefit_number][$year['year_be']]['attribution'] : 0;
+                                                            $attribution = $benefit_amount * ($attribution_rate / 100);
+                                                            echo $attribution > 0 ? number_format($attribution, 2, '.', ',') : '-';
+                                                            ?>
+                                                        </td>
+                                                <?php
+                                                    endforeach;
+                                                } else {
+                                                    echo '<td style="border: 1px solid #333; padding: 6px; text-align: center;">-</td>';
+                                                }
+                                                ?>
                                             </tr>
                                         <?php
                                         endforeach;
@@ -1008,18 +1188,25 @@ if ($project_id) {
                                                     echo " (Deadweight " . number_format($deadweight_avg, 1) . "%)";
                                                     ?>
                                                 </td>
-                                                <?php foreach ($available_years as $year): ?>
-                                                    <td style="border: 1px solid #333; padding: 6px; text-align: center;">
-                                                        <?php
-                                                        $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number]) && isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']])
-                                                            ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']]) : 0;
-                                                        $deadweight_rate = isset($project_benefits['base_case_factors'][$benefit_number]) && isset($project_benefits['base_case_factors'][$benefit_number][$year['year_be']])
-                                                            ? $project_benefits['base_case_factors'][$benefit_number][$year['year_be']]['deadweight'] : 0;
-                                                        $deadweight = $benefit_amount * ($deadweight_rate / 100);
-                                                        echo $deadweight > 0 ? formatNumber($deadweight, 0) : '-';
-                                                        ?>
-                                                    </td>
-                                                <?php endforeach; ?>
+                                                <?php
+                                                if (!empty($available_years)) {
+                                                    foreach ($available_years as $year): ?>
+                                                        <td style="border: 1px solid #333; padding: 6px; text-align: center;">
+                                                            <?php
+                                                            $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number]) && isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']])
+                                                                ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']]) : 0;
+                                                            $deadweight_rate = isset($project_benefits['base_case_factors'][$benefit_number]) && isset($project_benefits['base_case_factors'][$benefit_number][$year['year_be']])
+                                                                ? $project_benefits['base_case_factors'][$benefit_number][$year['year_be']]['deadweight'] : 0;
+                                                            $deadweight = $benefit_amount * ($deadweight_rate / 100);
+                                                            echo $deadweight > 0 ? number_format($deadweight, 2, '.', ',') : '-';
+                                                            ?>
+                                                        </td>
+                                                <?php
+                                                    endforeach;
+                                                } else {
+                                                    echo '<td style="border: 1px solid #333; padding: 6px; text-align: center;">-</td>';
+                                                }
+                                                ?>
                                             </tr>
                                         <?php
                                         endforeach;
@@ -1066,18 +1253,25 @@ if ($project_id) {
                                                     echo " (Displacement " . number_format($displacement_avg, 1) . "%)";
                                                     ?>
                                                 </td>
-                                                <?php foreach ($available_years as $year): ?>
-                                                    <td style="border: 1px solid #333; padding: 6px; text-align: center;">
-                                                        <?php
-                                                        $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number]) && isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']])
-                                                            ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']]) : 0;
-                                                        $displacement_rate = isset($project_benefits['base_case_factors'][$benefit_number]) && isset($project_benefits['base_case_factors'][$benefit_number][$year['year_be']])
-                                                            ? $project_benefits['base_case_factors'][$benefit_number][$year['year_be']]['displacement'] : 0;
-                                                        $displacement = $benefit_amount * ($displacement_rate / 100);
-                                                        echo $displacement > 0 ? formatNumber($displacement, 0) : '-';
-                                                        ?>
-                                                    </td>
-                                                <?php endforeach; ?>
+                                                <?php
+                                                if (!empty($available_years)) {
+                                                    foreach ($available_years as $year): ?>
+                                                        <td style="border: 1px solid #333; padding: 6px; text-align: center;">
+                                                            <?php
+                                                            $benefit_amount = isset($project_benefits['benefit_notes_by_year'][$benefit_number]) && isset($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']])
+                                                                ? floatval($project_benefits['benefit_notes_by_year'][$benefit_number][$year['year_be']]) : 0;
+                                                            $displacement_rate = isset($project_benefits['base_case_factors'][$benefit_number]) && isset($project_benefits['base_case_factors'][$benefit_number][$year['year_be']])
+                                                                ? $project_benefits['base_case_factors'][$benefit_number][$year['year_be']]['displacement'] : 0;
+                                                            $displacement = $benefit_amount * ($displacement_rate / 100);
+                                                            echo $displacement > 0 ? number_format($displacement, 2, '.', ',') : '-';
+                                                            ?>
+                                                        </td>
+                                                <?php
+                                                    endforeach;
+                                                } else {
+                                                    echo '<td style="border: 1px solid #333; padding: 6px; text-align: center;">-</td>';
+                                                }
+                                                ?>
                                             </tr>
                                         <?php
                                         endforeach;
@@ -1095,7 +1289,7 @@ if ($project_id) {
                         <div style="margin-top: 20px;">
                             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
                                 <div style="font-size: 24px; font-weight: bold;">
-                                    <?php echo formatNumber($base_case_impact ?? 0, 0); ?>
+                                    <?php echo $sroi_table_data && isset($sroi_table_data['base_case_impact']) ? number_format($sroi_table_data['base_case_impact'], 2, '.', ',') : number_format($base_case_impact ?? 0, 2, '.', ','); ?>
                                 </div>
                                 <div style="font-size: 14px; margin-top: 5px;">ผลกระทบกรณีฐานรวมปัจจุบัน (บาท)</div>
                             </div>
@@ -1106,7 +1300,7 @@ if ($project_id) {
                 <div class="section">
                     <h3>ตารางที่ 4 ผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI)</h3>
                     <div class="form-group">
-                        <p style="margin: 20px 0; line-height: 1.6;">เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ <?php echo formatNumber($saved_discount_rate, 2); ?> ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้โปรแกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง และคณะ (2566) สามารถสรุปผลได้ดังตารางที่ 4</p>
+                        <p style="margin: 20px 0; line-height: 1.6;">เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้โปรแกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง และคณะ (2566) สามารถสรุปผลได้ดังตารางที่ 4</p>
 
                         <p style="margin: 15px 0; line-height: 1.6;">
                             ตารางที่ 4 ผลประโยชน์ที่เกิดขึ้นจากดำเนินโครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : ''; ?>
@@ -1128,13 +1322,13 @@ if ($project_id) {
                                             ผลกระทบทางสังคมรวม
                                         </td>
                                         <td style="border: 1px solid #333; padding: 8px; text-align: right; font-weight: bold;">
-                                            <?php echo formatNumber($npv ?? 0, 2); ?>
+                                            <?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : number_format($npv ?? 0, 2, '.', ','); ?>
                                         </td>
                                         <td style="border: 1px solid #333; padding: 8px; text-align: center; font-weight: bold; color: #667eea;">
-                                            <?php echo formatNumber($sroi_ratio ?? 0, 2); ?> เท่า
+                                            <?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : number_format($sroi_ratio ?? 0, 2, '.', ','); ?> เท่า
                                         </td>
                                         <td style="border: 1px solid #333; padding: 8px; text-align: center; font-weight: bold; color: green;">
-                                            <?php echo $irr ?? 'N/A'; ?>
+                                            <?php echo $sroi_table_data && isset($sroi_table_data['irr']) ? $sroi_table_data['irr'] : ($irr ?? 'N/A'); ?>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1142,15 +1336,25 @@ if ($project_id) {
                         </div>
 
                         <p style="margin: 20px 0; line-height: 1.6; text-align: justify;">
-                            จากตารางที่ 4 พบว่าเมื่อผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI) มีค่า <?php echo formatNumber($sroi_ratio ?? 0, 2); ?> ซึ่งมีค่า<?php echo ($sroi_ratio ?? 0) >= 1 ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?> 1
-                            ค่า NPV เท่ากับ <?php echo ($npv ?? 0) >= 0 ? '' : '– '; ?><?php echo formatNumber(abs($npv ?? 0), 2); ?> มีค่า<?php echo ($npv ?? 0) >= 0 ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?> 0
-                            และค่า IRR <?php echo $irr != 'N/A' ? 'มีค่าร้อยละ ' . $irr : 'ไม่สามารถคำนวณได้'; ?>
-                            <?php if ($irr != 'N/A'): ?>
-                                ซึ่ง<?php echo floatval(str_replace('%', '', $irr)) >= ($saved_discount_rate ?? 3) ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?>อัตราคิดลด ร้อยละ <?php echo formatNumber($saved_discount_rate ?? 3, 2); ?>
+                            จากตารางที่ 4 พบว่าเมื่อผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI) มีค่า <?php
+                                                                                                            $display_sroi = $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? $sroi_table_data['sroi_ratio'] : ($sroi_ratio ?? 0);
+                                                                                                            echo number_format($display_sroi, 2, '.', ',');
+                                                                                                            ?> ซึ่งมีค่า<?php echo $display_sroi >= 1 ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?> 1
+                            ค่า NPV เท่ากับ <?php
+                                            $display_npv = $sroi_table_data && isset($sroi_table_data['npv']) ? $sroi_table_data['npv'] : ($npv ?? 0);
+                                            echo $display_npv >= 0 ? '' : '– ';
+                                            echo number_format(abs($display_npv), 2, '.', ',');
+                                            ?> มีค่า<?php echo $display_npv >= 0 ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?> 0
+                            และค่า IRR <?php
+                                        $display_irr = $sroi_table_data && isset($sroi_table_data['irr']) ? $sroi_table_data['irr'] : ($irr ?? 'N/A');
+                                        echo $display_irr != 'N/A' ? 'มีค่าร้อยละ ' . $display_irr : 'ไม่สามารถคำนวณได้';
+                                        ?>
+                            <?php if ($display_irr != 'N/A'): ?>
+                                ซึ่ง<?php echo floatval(str_replace('%', '', $display_irr)) >= ($saved_discount_rate ?? 3) ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?>อัตราคิดลด ร้อยละ <?php echo number_format($saved_discount_rate ?? 3, 2, '.', ','); ?>
                             <?php endif; ?>
-                            ซึ่งแสดงให้เห็นว่าเงินลงทุน 1 บาทจะได้ผลตอบแทนทางสังคมกลับมา <?php echo formatNumber($sroi_ratio ?? 0, 2); ?> บาท
-                            จึง<?php echo ($sroi_ratio ?? 0) >= 1 ? 'คุ้มค่า' : 'ยังไม่คุ้มค่า'; ?>ต่อการลงทุน
-                            <?php if (($sroi_ratio ?? 0) < 1): ?>
+                            ซึ่งแสดงให้เห็นว่าเงินลงทุน 1 บาทจะได้ผลตอบแทนทางสังคมกลับมา <?php echo number_format($display_sroi, 2, '.', ','); ?> บาท
+                            จึง<?php echo $display_sroi >= 1 ? 'คุ้มค่า' : 'ยังไม่คุ้มค่า'; ?>ต่อการลงทุน
+                            <?php if ($display_sroi < 1): ?>
                                 เนื่องจากเป็นโครงการในระยะสั้นจึงยังไม่เกิดผลกระทบในพื้นที่
                             <?php else: ?>
                                 แสดงให้เห็นว่าโครงการสร้างคุณค่าทางสังคมให้กับชุมชน
