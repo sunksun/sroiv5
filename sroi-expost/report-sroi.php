@@ -580,6 +580,21 @@ $form_data = [
             }
         }
     </style>
+    
+    <script>
+        // Function สำหรับ Export PDF
+        function exportToPDF() {
+            const projectId = <?php echo $selected_project_id ?: 0; ?>;
+            if (projectId > 0) {
+                // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
+                if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
+                    window.open('export-pdf.php?project_id=' + projectId, '_blank');
+                }
+            } else {
+                alert('กรุณาเลือกโครงการก่อน');
+            }
+        }
+    </script>
 </head>
 
 <body>
@@ -1750,6 +1765,19 @@ $form_data = [
             </div>
 
             <script>
+                // Function สำหรับ Export PDF
+                function exportToPDF() {
+                    const projectId = <?php echo $selected_project_id ?: 0; ?>;
+                    if (projectId > 0) {
+                        // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
+                        if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
+                            window.open('export-pdf.php?project_id=' + projectId, '_blank');
+                        }
+                    } else {
+                        alert('กรุณาเลือกโครงการก่อน');
+                    }
+                }
+
                 // เพิ่ม JavaScript สำหรับจัดการตารางเปรียบเทียบ
                 function addComparisonRow() {
                     const tableBody = document.getElementById('comparisonTableBody');
@@ -1979,7 +2007,7 @@ $form_data = [
                     if (projectId > 0) {
                         // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
                         if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
-                            window.open('report-pdf.php?project_id=' + projectId, '_blank');
+                            window.open('export-pdf.php?project_id=' + projectId, '_blank');
                         }
                     } else {
                         alert('กรุณาเลือกโครงการก่อน');

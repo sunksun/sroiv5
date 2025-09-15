@@ -160,6 +160,14 @@
         // ถ้าไม่มีฟังก์ชัน ให้ใช้ N/A
         $irr = 'N/A';
     }
+    
+    // เก็บค่าลง session เพื่อใช้ใน export-pdf.php
+    $_SESSION['sroi_npv'] = $npv;
+    $_SESSION['sroi_ratio'] = $sroi_ratio;
+    $_SESSION['sroi_irr'] = ($irr !== 'N/A') ? str_replace('%', '', $irr) : 'N/A';
+    
+    // เก็บเวลาที่คำนวณเพื่อ debug
+    $_SESSION['sroi_calculated_at'] = date('H:i:s');
     ?>
 
     <!-- Benefit Section -->
