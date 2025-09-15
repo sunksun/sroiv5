@@ -162,11 +162,27 @@ if ($project_id) {
     $selected_project_id = $project_id;
     $session_key = 'sroi_data_' . $project_id;
 
-    // ลองดึงข้อมูลจาก session ก่อน
+    // ตรวจสอบว่ามีการขอ refresh หรือไม่
+    $force_refresh = isset($_GET['refresh']) && $_GET['refresh'] == '1';
+    
+    // หากขอ refresh ให้ลบข้อมูลเก่าใน session
+    if ($force_refresh && isset($_SESSION[$session_key])) {
+        unset($_SESSION[$session_key]);
+    }
+    
+    // ลบ cache เก่าทันทีเพื่อบังคับคำนวณใหม่ (ชั่วคราวสำหรับแก้ไข IRR)
     if (isset($_SESSION[$session_key])) {
+        $temp_data = $_SESSION[$session_key];
+        if (isset($temp_data['irr']) && $temp_data['irr'] !== 'N/A' && strpos($temp_data['irr'], '50.00') !== false) {
+            unset($_SESSION[$session_key]); // ลบข้อมูล IRR ที่ผิด
+        }
+    }
+    
+    // ลองดึงข้อมูลจาก session ก่อน (เว้นแต่จะขอ refresh)
+    if (isset($_SESSION[$session_key]) && !$force_refresh) {
         $sroi_table_data = $_SESSION[$session_key];
-        // ตรวจสอบว่าข้อมูลใน session ยังใหม่อยู่หรือไม่ (ภายใน 1 ชั่วโมง)
-        $cache_timeout = 3600; // 1 ชั่วโมง
+        // ตรวจสอบว่าข้อมูลใน session ยังใหม่อยู่หรือไม่ (ภายใน 30 นาที แทน 1 ชั่วโมง)
+        $cache_timeout = 1800; // 30 นาที
         if ((time() - $sroi_table_data['calculated_at']) > $cache_timeout) {
             $sroi_table_data = null; // ข้อมูลเก่าเกินไป ให้คำนวณใหม่
         } else {
@@ -209,7 +225,7 @@ if ($project_id) {
 
     // หากไม่มีข้อมูลใน session หรือข้อมูลเก่า ให้คำนวณใหม่
     if (!$sroi_table_data) {
-        $data_source = 'calculated';
+        $data_source = $force_refresh ? 'calculated (forced refresh)' : 'calculated';
 
         try {
             // ดึงข้อมูลต้นทุนและผลประโยชน์เหมือนกับใน index.php
@@ -376,6 +392,40 @@ if ($project_id) {
     // กรณีไม่มี project_id ให้ตั้งค่าเริ่มต้น
     $available_years = [];
 } // จบ if ($project_id) - main project check
+
+// โหลดข้อมูลรายงานที่บันทึกไว้
+$saved_report_data = [];
+if ($project_id) {
+    try {
+        $report_query = "SELECT report_data FROM project_report_settings WHERE project_id = ?";
+        $report_stmt = mysqli_prepare($conn, $report_query);
+        if ($report_stmt) {
+            mysqli_stmt_bind_param($report_stmt, "i", $project_id);
+            mysqli_stmt_execute($report_stmt);
+            $report_result = mysqli_stmt_get_result($report_stmt);
+            
+            if ($report_row = mysqli_fetch_assoc($report_result)) {
+                $saved_report_data = json_decode($report_row['report_data'], true) ?: [];
+            }
+            mysqli_stmt_close($report_stmt);
+        }
+    } catch (Exception $e) {
+        // หากเกิดข้อผิดพลาดในการโหลดข้อมูล ให้ใช้ค่าเริ่มต้น
+        $saved_report_data = [];
+    }
+}
+
+// เตรียมข้อมูลสำหรับการแสดงผล
+$form_data = [
+    'area_display' => $saved_report_data['general_info']['area_display'] ?? ($selected_project['area'] ?? ''),
+    'activities_display' => $saved_report_data['general_info']['activities_display'] ?? ($selected_project['activities'] ?? ''),
+    'target_group_display' => $saved_report_data['general_info']['target_group_display'] ?? ($selected_project['target_group'] ?? ''),
+    'social_impact' => $saved_report_data['impact_assessment']['social_impact'] ?? '',
+    'economic_impact' => $saved_report_data['impact_assessment']['economic_impact'] ?? '',
+    'environmental_impact' => $saved_report_data['impact_assessment']['environmental_impact'] ?? '',
+    'interviewee_name' => $saved_report_data['interview_data']['interviewee_name'] ?? '',
+    'interviewee_count' => $saved_report_data['interview_data']['interviewee_count'] ?? 0
+];
 ?>
 
 <!DOCTYPE html>
@@ -551,7 +601,7 @@ if ($project_id) {
         <?php endif; ?>
 
         <?php if (!$submitted): ?>
-            <form method="POST" action="<?php echo $project_id ? '?project_id=' . $project_id : ''; ?>">
+            <form method="POST" action="save-report-data.php" id="report-form">
                 <?php if ($project_id): ?>
                     <input type="hidden" name="project_id" value="<?php echo $project_id; ?>">
                 <?php endif; ?>
@@ -563,15 +613,15 @@ if ($project_id) {
                     </p>
                     <div class="form-group">
                         <label for="area_display">1. ดำเนินโครงการในพื้นที่:</label>
-                        <input type="text" id="area_display" name="area_display" placeholder="กรอกพื้นที่ดำเนินโครงการ" value="<?php echo $selected_project ? htmlspecialchars($selected_project['area'] ?? '') : ''; ?>">
+                        <input type="text" id="area_display" name="area_display" placeholder="กรอกพื้นที่ดำเนินโครงการ" value="<?php echo htmlspecialchars($form_data['area_display']); ?>">
                     </div>
                     <div class="form-group">
                         <label for="activities_display">2. ดำเนินกิจกรรม:</label>
-                        <input type="text" id="activities_display" name="activities_display" placeholder="กรอกกิจกรรมที่ดำเนินการ" value="<?php echo $selected_project ? htmlspecialchars($selected_project['activities'] ?? '') : ''; ?>">
+                        <input type="text" id="activities_display" name="activities_display" placeholder="กรอกกิจกรรมที่ดำเนินการ" value="<?php echo htmlspecialchars($form_data['activities_display']); ?>">
                     </div>
                     <div class="form-group">
                         <label for="target_group_display">3. กลุ่มเป้าหมาย:</label>
-                        <input type="text" id="target_group_display" name="target_group_display" placeholder="กรอกกลุ่มเป้าหมาย" value="<?php echo $selected_project ? htmlspecialchars($selected_project['target_group'] ?? '') : ''; ?>">
+                        <input type="text" id="target_group_display" name="target_group_display" placeholder="กรอกกลุ่มเป้าหมาย" value="<?php echo htmlspecialchars($form_data['target_group_display']); ?>">
                     </div>
                 </div>
 
@@ -580,18 +630,11 @@ if ($project_id) {
                     <p style="margin: 20px 0; line-height: 1.6;">
                         การประเมินผลตอบแทนทางสังคม (SROI) โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '.........................................'; ?> ทำการประเมินผลหลังโครงการเสร็จสิ้น (Ex-post Evaluation) ในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (หากเป็นโครงการต่อเนื่องให้ระบุปีที่ดำเนินการปีแรก) โดยใช้อัตราดอกเบี้ยพันธบัตรรัฐบาลในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> ร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> เป็นอัตราคิดลด (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) และกำหนดให้ปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> เป็นปีฐาน (หากเป็นโครงการต่อเนื่องให้ระบุปีที่ดำเนินการปีแรกเป็นฐาน และอัตราดอกเบี้ยพันธบัตรรัฐบาลในปีนั้นๆ) มีขั้นตอนการดำเนินงาน ดังนี้
                     </p>
-                    <div class="form-group">
-                        <label for="step1">ขั้นตอนที่ 1:</label>
-                        <input type="text" id="step1" name="step1" required>
+                    <div class="text-center">
+                        <img src="../assets/imgs/SROI-STEPS.jpg" alt="ขั้นตอนการประเมิน SROI" class="img-fluid" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                     </div>
-                    <div class="form-group">
-                        <label for="step2">ขั้นตอนที่ 2:</label>
-                        <input type="text" id="step2" name="step2" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="step3">ขั้นตอนที่ 3:</label>
-                        <input type="text" id="step3" name="step3" required>
-                    </div>
+                    
+>
                 </div>
 
                 <div class="section">
@@ -608,19 +651,6 @@ if ($project_id) {
                         </p>
                     </div>
 
-                    <?php if (isset($data_source)): ?>
-                        <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.9em; color: #1976d2;">
-                            <strong>🔍 Debug Info:</strong> ข้อมูล SROI ถูกโหลดจาก <?php echo $data_source == 'session' ? 'Session Cache' : 'คำนวณใหม่'; ?>
-                            <?php if ($data_source == 'session' && isset($sroi_table_data['calculated_at'])): ?>
-                                (คำนวณเมื่อ <?php echo date('H:i:s', $sroi_table_data['calculated_at']); ?>)
-                            <?php endif; ?>
-                            <?php if ($sroi_table_data): ?>
-                                <br><strong>Values:</strong> NPV: <?php echo number_format($sroi_table_data['npv'] ?? 0, 2); ?> |
-                                SROI: <?php echo number_format($sroi_table_data['sroi_ratio'] ?? 0, 2); ?> |
-                                IRR: <?php echo $sroi_table_data['irr'] ?? 'N/A'; ?>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
 
                     <!-- ซ่อน input fields และใช้ hidden inputs แทน -->
                     <input type="hidden" name="analysis_project" value="<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : ''; ?>">
@@ -628,15 +658,15 @@ if ($project_id) {
 
                     <div class="form-group">
                         <label for="social_impact">ผลกระทบด้านสังคม:</label>
-                        <textarea id="social_impact" name="social_impact" required></textarea>
+                        <textarea id="social_impact" name="social_impact"><?php echo htmlspecialchars($form_data['social_impact']); ?></textarea>
                     </div>
                     <div class="form-group">
                         <label for="economic_impact">ผลกระทบด้านเศรษฐกิจ:</label>
-                        <textarea id="economic_impact" name="economic_impact" required></textarea>
+                        <textarea id="economic_impact" name="economic_impact"><?php echo htmlspecialchars($form_data['economic_impact']); ?></textarea>
                     </div>
                     <div class="form-group">
                         <label for="environmental_impact">ผลกระทบด้านสิ่งแวดล้อม:</label>
-                        <textarea id="environmental_impact" name="environmental_impact" required></textarea>
+                        <textarea id="environmental_impact" name="environmental_impact"><?php echo htmlspecialchars($form_data['environmental_impact']); ?></textarea>
                     </div>
                 </div>
 
@@ -654,12 +684,12 @@ if ($project_id) {
                     
                     <div class="form-group">
                         <label for="interviewee_name">ผู้ให้สัมภาษณ์:</label>
-                        <input type="text" id="interviewee_name" name="interviewee_name" placeholder="เช่น นาย/นาง ชื่อ-นามสกุล ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน" />
+                        <input type="text" id="interviewee_name" name="interviewee_name" placeholder="เช่น นาย/นาง ชื่อ-นามสกุล ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน" value="<?php echo htmlspecialchars($form_data['interviewee_name']); ?>" />
                     </div>
                     
                     <div class="form-group">
                         <label for="interviewee_count">จำนวนผู้ให้สัมภาษณ์:</label>
-                        <input type="number" id="interviewee_count" name="interviewee_count" placeholder="0" min="1" style="width: 100px;" /> คน/กลุ่ม
+                        <input type="number" id="interviewee_count" name="interviewee_count" placeholder="0" min="1" style="width: 100px;" value="<?php echo $form_data['interviewee_count'] > 0 ? $form_data['interviewee_count'] : ''; ?>" /> คน/กลุ่ม
                     </div>
                     <h3>ตารางที่ 1 เปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
 
@@ -1321,7 +1351,7 @@ if ($project_id) {
                                         <td style="border: 1px solid #333; padding: 8px;">
                                             ผลกระทบทางสังคมรวม
                                         </td>
-                                        <td style="border: 1px solid #333; padding: 8px; text-align: right; font-weight: bold;">
+                                        <td style="border: 1px solid #333; padding: 8px; text-align: center; font-weight: bold;">
                                             <?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : number_format($npv ?? 0, 2, '.', ','); ?>
                                         </td>
                                         <td style="border: 1px solid #333; padding: 8px; text-align: center; font-weight: bold; color: #667eea;">
@@ -1364,7 +1394,14 @@ if ($project_id) {
                 </div>
 
                 <div style="text-align: center;">
-                    <button type="submit" class="btn">บันทึกข้อมูลและสร้างรายงาน SROI</button>
+                    <div style="text-align: center; margin: 30px 0; padding: 20px; border-top: 2px solid #dee2e6;">
+                        <button type="submit" class="btn btn-primary" style="margin-right: 15px; padding: 12px 30px; font-size: 16px;">
+                            <i class="fas fa-save"></i> บันทึกข้อมูลรายงาน
+                        </button>
+                        <button type="button" onclick="exportToPDF()" class="btn btn-danger" style="padding: 12px 30px; font-size: 16px;" <?php echo !$project_id ? 'disabled' : ''; ?>>
+                            <i class="fas fa-file-pdf"></i> ออกรายงาน PDF
+                        </button>
+                    </div>
                 </div>
             </form>
 
@@ -1588,7 +1625,7 @@ if ($project_id) {
                                             <td style="border: 1px solid #333; padding: 10px; vertical-align: top; font-size: 11px;">
                                                 <?php echo isset($sroi_impact[$i]) ? nl2br(htmlspecialchars($sroi_impact[$i])) : ''; ?>
                                             </td>
-                                            <td style="border: 1px solid #333; padding: 10px; text-align: right; font-size: 11px;">
+                                            <td style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 11px;">
                                                 <?php echo isset($sroi_npv[$i]) && is_numeric($sroi_npv[$i]) ? number_format($sroi_npv[$i], 2) : ''; ?>
                                             </td>
                                             <td style="border: 1px solid #333; padding: 10px; text-align: right; font-size: 11px;">
@@ -1601,7 +1638,7 @@ if ($project_id) {
                                     <?php endfor; ?>
                                     <tr style="background: #f8f9fa; font-weight: bold;">
                                         <td style="border: 2px solid #333; padding: 10px; text-align: center; font-size: 12px;">รวม/เฉลี่ย</td>
-                                        <td style="border: 2px solid #333; padding: 10px; text-align: right; font-size: 12px;">
+                                        <td style="border: 2px solid #333; padding: 10px; text-align: center; font-size: 12px;">
                                             <?php
                                             $total_npv = 0;
                                             foreach ($sroi_npv as $npv) {
@@ -1934,6 +1971,66 @@ if ($project_id) {
                             }
                         });
                     }
+                });
+
+                // ฟังก์ชันสำหรับออกรายงาน PDF
+                function exportToPDF() {
+                    const projectId = <?php echo $selected_project_id ?: 0; ?>;
+                    if (projectId > 0) {
+                        // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
+                        if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
+                            window.open('report-pdf.php?project_id=' + projectId, '_blank');
+                        }
+                    } else {
+                        alert('กรุณาเลือกโครงการก่อน');
+                    }
+                }
+
+                // ฟังก์ชันสำหรับแสดงสถานะการบันทึก
+                function showStatus(message, type) {
+                    const statusDiv = document.createElement('div');
+                    statusDiv.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 15px 20px;
+                        border-radius: 5px;
+                        color: white;
+                        font-weight: bold;
+                        z-index: 1000;
+                        background-color: ${type === 'success' ? '#28a745' : type === 'info' ? '#007bff' : '#dc3545'};
+                    `;
+                    statusDiv.textContent = message;
+                    document.body.appendChild(statusDiv);
+
+                    setTimeout(() => {
+                        document.body.removeChild(statusDiv);
+                    }, 3000);
+                }
+
+                // แสดงข้อความสถานะหากมี
+                <?php if (isset($_SESSION['success_message'])): ?>
+                    showStatus('<?php echo addslashes($_SESSION['success_message']); ?>', 'success');
+                    <?php unset($_SESSION['success_message']); ?>
+                <?php endif; ?>
+
+                <?php if (isset($_SESSION['error_message'])): ?>
+                    showStatus('<?php echo addslashes($_SESSION['error_message']); ?>', 'error');
+                    <?php unset($_SESSION['error_message']); ?>
+                <?php endif; ?>
+                
+                // Debug form submission
+                document.getElementById('report-form').addEventListener('submit', function(e) {
+                    console.log('Form is being submitted');
+                    console.log('Form action:', this.action);
+                    console.log('Form method:', this.method);
+                    
+                    // Check if required fields have data
+                    const projectId = document.querySelector('input[name="project_id"]');
+                    console.log('Project ID:', projectId ? projectId.value : 'not found');
+                    
+                    // Show loading message
+                    showStatus('กำลังบันทึกข้อมูล...', 'info');
                 });
             </script>
 
