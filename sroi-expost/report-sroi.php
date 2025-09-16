@@ -270,10 +270,17 @@ if ($project_id) {
                 $project_benefits = $benefit_data; // เก็บข้อมูลทั้งหมด
                 $benefit_notes_by_year = $benefit_data['benefit_notes_by_year'] ?? [];
                 $base_case_factors = $benefit_data['base_case_factors'] ?? [];
+                
+                // เก็บข้อมูลลง session สำหรับ PDF export
+                $_SESSION['project_benefits'] = $project_benefits;
+                $_SESSION['available_years'] = $available_years;
             } else {
                 $project_benefits = ['benefits' => [], 'benefit_notes_by_year' => [], 'base_case_factors' => []];
                 $benefit_notes_by_year = [];
                 $base_case_factors = [];
+                
+                // เก็บข้อมูลลง session สำหรับ PDF export
+                $_SESSION['project_benefits'] = $project_benefits;
             }
         } catch (Exception $e) {
             echo "Error in calculation section: " . $e->getMessage() . "<br>";
@@ -313,6 +320,9 @@ if ($project_id) {
 
         // เก็บค่า base_case_impact ที่คำนวณไว้ก่อนที่จะ include output-section.php
         $calculated_base_case_impact = $base_case_impact;
+        
+        // เก็บค่า base_case_impact ลง session หลังจากคำนวณแล้ว
+        $_SESSION['base_case_impact'] = $base_case_impact;
 
         // Get discount rate first
         $saved_discount_rate = 3.0;
@@ -371,6 +381,7 @@ if ($project_id) {
 
                     // เก็บข้อมูลใน session สำหรับการใช้งานครั้งต่อไป
                     $_SESSION[$session_key] = $sroi_table_data;
+                    $_SESSION['base_case_impact'] = $base_case_impact;
                     $data_source = 'calculated';
                 }
             } catch (Exception $e) {
@@ -1334,7 +1345,12 @@ $form_data = [
                         <div style="margin-top: 20px;">
                             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
                                 <div style="font-size: 24px; font-weight: bold;">
-                                    <?php echo $sroi_table_data && isset($sroi_table_data['base_case_impact']) ? number_format($sroi_table_data['base_case_impact'], 2, '.', ',') : number_format($base_case_impact ?? 0, 2, '.', ','); ?>
+                                    <?php 
+                                    $display_base_case_impact = $sroi_table_data && isset($sroi_table_data['base_case_impact']) ? $sroi_table_data['base_case_impact'] : ($base_case_impact ?? 0);
+                                    // เก็บค่าที่แสดงจริงลง session สำหรับ PDF
+                                    $_SESSION['display_base_case_impact'] = $display_base_case_impact;
+                                    echo number_format($display_base_case_impact, 2, '.', ','); 
+                                    ?>
                                 </div>
                                 <div style="font-size: 14px; margin-top: 5px;">ผลกระทบกรณีฐานรวมปัจจุบัน (บาท)</div>
                             </div>

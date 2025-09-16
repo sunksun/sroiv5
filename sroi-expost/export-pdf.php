@@ -77,8 +77,8 @@ $form_data = [
 // ดึงข้อมูล Impact Pathway (ใช้โค้ดเดียวกันกับ report-sroi.php)
 $selected_project_id = $project_id;
 
-// ใช้ปีปัจจุบันเป็นค่าเริ่มต้น
-$available_years = [
+// ดึงข้อมูลปีจาก session หรือใช้ปีปัจจุบันเป็นค่าเริ่มต้น
+$available_years = $_SESSION['available_years'] ?? [
     ['year_be' => date('Y') + 543]
 ];
 
@@ -103,6 +103,17 @@ $sroi_calculations = [
     'sroi_ratio' => $_SESSION['sroi_ratio'] ?? 'N/A', 
     'irr' => $_SESSION['sroi_irr'] ?? 'N/A'
 ];
+
+// Debug: ตรวจสอบข้อมูลที่ดึงมาจาก session
+error_log("DEBUG export-pdf.php - project_benefits from session: " . print_r($project_benefits, true));
+error_log("DEBUG export-pdf.php - available_years from session: " . print_r($available_years, true));
+
+// ถ้าไม่มีข้อมูลใน session ให้ลองดึงโดยตรงจากฐานข้อมูล
+if (empty($project_benefits['benefits']) && file_exists('includes/functions.php')) {
+    require_once 'includes/functions.php';
+    $project_benefits = getProjectBenefits($conn, $project_id);
+    error_log("DEBUG export-pdf.php - project_benefits from database: " . print_r($project_benefits, true));
+}
 
 try {
     // ใช้ temp directory ในโปรเจ็ค
