@@ -1,4 +1,8 @@
 <?php
+// เพิ่ม timeout และ memory limit
+set_time_limit(120); // 2 minutes
+ini_set('memory_limit', '256M');
+
 session_start();
 require_once '../config.php';
 require_once '../vendor/autoload.php';
@@ -116,6 +120,9 @@ if (empty($project_benefits['benefits']) && file_exists('includes/functions.php'
 }
 
 try {
+    // Debug: ตรวจสอบว่าข้อมูลครบถ้วน
+    error_log("DEBUG: Starting PDF generation for project_id: $project_id");
+    
     // ใช้ temp directory ในโปรเจ็ค
     $temp_dir = __DIR__ . '/../temp';
     if (!is_dir($temp_dir)) {
@@ -138,9 +145,13 @@ try {
         'autoScriptToLang' => true,
         'autoLangToFont' => true
     ]);
+    
+    error_log("DEBUG: mPDF instance created successfully");
 
     // เริ่มต้น output buffer
     ob_start();
+    
+    error_log("DEBUG: Starting template inclusion");
     
     // รวม template
     include 'pdf-template.php';
@@ -148,8 +159,12 @@ try {
     // ดึงเนื้อหา HTML
     $html = ob_get_clean();
     
+    error_log("DEBUG: Template included, HTML length: " . strlen($html));
+    
     // เขียน HTML ลงใน PDF
+    error_log("DEBUG: Starting WriteHTML");
     $mpdf->WriteHTML($html);
+    error_log("DEBUG: WriteHTML completed");
     
     // กำหนดชื่อไฟล์
     $project_name_clean = preg_replace('/[^a-zA-Z0-9\-_\s]/', '', $selected_project['name']);

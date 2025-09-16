@@ -33,7 +33,7 @@
         }
 
         .section {
-            margin-bottom: 30px;
+            margin-bottom: 15px;
             page-break-inside: avoid;
         }
 
@@ -41,7 +41,7 @@
             color: #667eea;
             border-bottom: 2px solid #667eea;
             padding-bottom: 5px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-size: 18px;
         }
 
@@ -49,7 +49,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .info-item {
@@ -86,8 +86,9 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 12px;
+            page-break-inside: avoid;
         }
 
         table th,
@@ -130,6 +131,14 @@
             page-break-before: always;
         }
 
+        .table-section {
+            page-break-inside: avoid;
+        }
+
+        .large-table {
+            page-break-inside: avoid;
+        }
+
         .footer {
             margin-top: 30px;
             text-align: center;
@@ -152,7 +161,7 @@
     <!-- ส่วนที่ 1: ข้อมูลทั่วไปของโครงการ -->
     <div class="section">
         <h3>ข้อมูลทั่วไปของโครงการ</h3>
-        <p style="margin: 20px 0; line-height: 1.6; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             โครงการ<?php echo htmlspecialchars($project_name ?? ''); ?>&nbsp;ดำเนินโครงการในพื้นที่
             <?php echo htmlspecialchars($form_data['area_display'] ?? ''); ?>
             ได้รับการจัดสรรงบประมาณ <?php echo isset($selected_project['budget']) ? number_format($selected_project['budget'], 2) : ''; ?> บาท
@@ -164,7 +173,7 @@
     <!-- ส่วนที่ 2: การประเมินผลตอบแทนทางสังคม -->
     <div class="section">
         <h3>การประเมินผลตอบแทนทางสังคม</h3>
-        <p style="margin: 20px 0; line-height: 1.6; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             การประเมินผลตอบแทนทางสังคม (SROI) โครงการ<?php echo htmlspecialchars($project_name ?? ''); ?>
             ทำการประเมินผลหลังโครงการเสร็จสิ้น (Ex-post Evaluation) ในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>
             โดยใช้อัตราดอกเบี้ยพันธบัตรรัฐบาลในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>
@@ -180,22 +189,22 @@
     <!-- ส่วนที่ 3: การเปลี่ยนแปลงในมิติทางสังคม -->
     <div class="section">
         <h3>การเปลี่ยนแปลงในมิติทางสังคม</h3>
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; line-height: 1.6;">
-            <p style="margin-bottom: 10px; line-height: 1.6; text-align: justify;">
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; line-height: 1.4;">
+            <p style="margin-bottom: 5px; line-height: 1.4; text-align: justify;">
                 การเปลี่ยนแปลงในมิติทางสังคม จากการวิเคราะห์การเปลี่ยนแปลงในมิติสังคม (Social Impact Assessment : SIA)
                 ของโครงการ <strong><?php echo htmlspecialchars($project_name ?? ''); ?></strong>
                 มิติการวิเคราะห์ประกอบด้วย ปัจจัยจำเข้า (Input) กิจกรรม (Activity) ผลผลิต (Output) ผลลัพธ์(Outcome)
                 และผลกระทบของโครงการ (Impact) โดยผลกระทบที่เกิดจากการดำเนินกิจกรรมภายใต้โครงการ
                 แบ่งออกเป็น 3 มิติ ได้แก่ ผลกระทบทางสังคม ผลกระทบทางเศรษฐกิจ และผลกระทบสิ่งแวดล้อม
             </p>
-            <div style="margin: 20px 0;">
-                <p style="margin-bottom: 10px; line-height: 1.6;">
+            <div style="margin: 10px 0;">
+                <p style="margin-bottom: 5px; line-height: 1.4;">
                     1. ผลกระทบด้านสังคม: <?php echo htmlspecialchars($form_data['social_impact'] ?? ''); ?>
                 </p>
-                <p style="margin-bottom: 10px; line-height: 1.6;">
+                <p style="margin-bottom: 5px; line-height: 1.4;">
                     2. ผลกระทบด้านเศรษฐกิจ: <?php echo htmlspecialchars($form_data['economic_impact'] ?? ''); ?>
                 </p>
-                <p style="margin-bottom: 10px; line-height: 1.6;">
+                <p style="margin-bottom: 5px; line-height: 1.4;">
                     3. ผลกระทบด้านสิ่งแวดล้อม: <?php echo htmlspecialchars($form_data['environmental_impact'] ?? ''); ?>
                 </p>
             </div>
@@ -208,7 +217,7 @@
     <div class="section">
         <h3>การเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
 
-        <p style="margin: 20px 0; line-height: 1.6; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<?php echo htmlspecialchars($project_name ?? ''); ?>
             มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?>%)
             <?php echo isset($sroi_calculations['npv']) && is_numeric($sroi_calculations['npv']) ? number_format($sroi_calculations['npv'], 2) : 'N/A'; ?> บาท
@@ -222,15 +231,16 @@
             ซึ่งเปรียบเทียบกับอัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> โดยมีรายละเอียด ดังนี้
         </p>
 
-        <p style="margin: 20px 0; line-height: 1.6; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<?php echo htmlspecialchars($project_name ?? ''); ?>
             <?php echo htmlspecialchars($form_data['interviewee_name'] ?? ''); ?> ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน จำนวน <?php echo htmlspecialchars($form_data['interviewee_count'] ?? ''); ?> คน
             สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1
         </p>
 
-        <h4 style="color: #667eea; margin: 20px 0 10px 0; font-size: 16px; font-weight: bold;">ตารางที่ 1 เปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h4>
+        <div class="table-section">
+            <h4 style="color: #667eea; margin: 10px 0 5px 0; font-size: 16px; font-weight: bold;">ตารางที่ 1 เปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h4>
 
-        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+            <table style="width: 100%; border-collapse: collapse; margin: 8px 0;" class="large-table">
             <thead>
                 <tr>
                     <th style="background-color: #cccccc; border: 1px solid #333; font-weight: bold; font-size: 14px; padding: 8px; color: #333; text-align: center;">ผลประโยชน์</th>
@@ -280,6 +290,7 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 
     <div class="page-break"></div>
@@ -288,15 +299,16 @@
     <div class="section">
         <h3>Impact Pathway และการคำนวณ SROI</h3>
 
-        <p style="margin: 20px 0; line-height: 1.6; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             จากเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ สามารถนำมาวิเคราะห์เส้นทางผลกระทบทางสังคม (Social Impact Pathway)
             ของแต่ละโครงการ แสดงดังตารางที่ 2
         </p>
 
         <!-- ตารางที่ 2: Impact Pathway -->
-        <h4 style="color: #667eea; margin: 20px 0 10px 0; font-size: 16px; font-weight: bold;">ตารางที่ 2 เส้นทางผลกระทบทางสังคม (Social Impact Pathway) โครงการ<?php echo htmlspecialchars($project_name ?? ''); ?></h4>
+        <div class="table-section">
+            <h4 style="color: #667eea; margin: 10px 0 5px 0; font-size: 16px; font-weight: bold;">ตารางที่ 2 เส้นทางผลกระทบทางสังคม (Social Impact Pathway) โครงการ<?php echo htmlspecialchars($project_name ?? ''); ?></h4>
 
-        <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11px;">
+            <table style="width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11px;" class="large-table">
             <thead>
                 <tr>
                     <th style="background-color: #cccccc; border: 1px solid #333; padding: 8px; text-align: center; width: 15%; color: #333;">ปัจจัยนำเข้า<br>Input</th>
@@ -575,14 +587,16 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
 
         <!-- ตารางที่ 3: ผลกระทบกรณีฐาน (Base Case Impact) -->
-        <h4 style="color: #667eea; margin: 20px 0 10px 0; font-size: 16px; font-weight: bold;">ตารางที่ 3 ผลกระทบกรณีฐาน (Base Case Impact)</h4>
+        <h4 style="color: #667eea; margin: 10px 0 5px 0; font-size: 16px; font-weight: bold;">ตารางที่ 3 ผลกระทบกรณีฐาน (Base Case Impact)</h4>
 
         <p style="margin: 20px 0; line-height: 1.6;">จากการวิเคราะห์เส้นทางผลกระทบทางสังคม (Social Impact Pathway) ที่แสดงดังตารางที่ 2 สามารถนำมาคำนวณผลประโยชน์ที่เกิดขึ้นของโครงการ ได้ดังนี้</p>
 
-        <h5 style="color: #667eea; margin-bottom: 15px; font-size: 14px;">ผลจากปัจจัยอื่นๆ (Attribution)</h5>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <div class="table-section">
+            <h5 style="color: #667eea; margin-bottom: 8px; font-size: 14px;">ผลจากปัจจัยอื่นๆ (Attribution)</h5>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;" class="large-table">
             <thead>
                 <tr>
                     <th style="background-color: #cccccc; border: 1px solid #333; padding: 8px; text-align: center; width: 40%; color: #333;">รายการ</th>
@@ -648,9 +662,11 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
 
-        <h5 style="color: #667eea; margin-bottom: 15px; margin-top: 20px; font-size: 14px;">ผลลัพธ์ส่วนเกิน (Deadweight)</h5>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <div class="table-section">
+            <h5 style="color: #667eea; margin-bottom: 8px; margin-top: 15px; font-size: 14px;">ผลลัพธ์ส่วนเกิน (Deadweight)</h5>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;" class="large-table">
             <thead>
                 <tr>
                     <th style="background-color: #cccccc; border: 1px solid #333; padding: 8px; text-align: center; width: 40%; color: #333;">รายการ</th>
@@ -716,9 +732,11 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
 
-        <h5 style="color: #667eea; margin-bottom: 15px; margin-top: 20px; font-size: 14px;">ผลลัพธ์ทดแทน (Displacement)</h5>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <div class="table-section">
+            <h5 style="color: #667eea; margin-bottom: 8px; margin-top: 15px; font-size: 14px;">ผลลัพธ์ทดแทน (Displacement)</h5>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;" class="large-table">
             <thead>
                 <tr>
                     <th style="background-color: #cccccc; border: 1px solid #333; padding: 8px; text-align: center; width: 40%; color: #333;">รายการ</th>
@@ -784,8 +802,9 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
 
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 10px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 24px; font-weight: bold;">
                     <?php
@@ -799,15 +818,16 @@
         </div>
 
         <!-- ตารางที่ 4: ผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI) -->
-        <h4 style="color: #667eea; margin: 20px 0 10px 0; font-size: 16px; font-weight: bold;">ตารางที่ 4 ผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI)</h4>
+        <div class="table-section">
+            <h4 style="color: #667eea; margin: 10px 0 5px 0; font-size: 16px; font-weight: bold;">ตารางที่ 4 ผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI)</h4>
 
-        <p style="margin: 20px 0; line-height: 1.8; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. 2567 (ธนาคารแห่งประเทศไทย, 2567) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้โปรแกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง และคณะ (2566) สามารถสรุปผลได้ดังตารางที่ 4
         </p>
 
         <h5 style="color: #667eea; margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; text-align: justify;">ตารางที่ 4 ผลประโยชน์ที่เกิดขึ้นจากดำเนินโครงการ<?php echo htmlspecialchars($project_name ?? ''); ?> ประเมินหลังจากการดำเนินโครงการเสร็จสิ้น (Ex-Post Evaluation) ณ ปี พ.ศ. <?php echo date('Y') + 543; ?></h5>
 
-        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+            <table style="width: 100%; border-collapse: collapse; margin: 8px 0;" class="large-table">
             <thead>
                 <tr>
                     <th style="background-color: #cccccc; border: 1px solid #333; padding: 8px; text-align: center; color: #333;">รายการ</th>
@@ -829,8 +849,9 @@
                 </tr>
             </tbody>
         </table>
+        </div>
 
-        <p style="margin: 20px 0; line-height: 1.8; text-align: justify;">
+        <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
             จากตารางที่ 4 พบว่าเมื่อผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI) มีค่า
             <?php echo isset($sroi_calculations['sroi_ratio']) && is_numeric($sroi_calculations['sroi_ratio']) ? number_format($sroi_calculations['sroi_ratio'], 2) : 'N/A'; ?>
             ซึ่งมีค่า<?php echo isset($sroi_calculations['sroi_ratio']) && is_numeric($sroi_calculations['sroi_ratio']) && $sroi_calculations['sroi_ratio'] >= 1 ? 'มากกว่าหรือเท่ากับ' : 'น้อยกว่า'; ?> 1
