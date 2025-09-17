@@ -347,6 +347,7 @@ if ($project_id) {
         $sroi_ratio = 0;
         $irr = 'N/A';
 
+        
         // ถ้ามีข้อมูลต้นทุนหรือผลประโยชน์ ให้ include output-section เพื่อคำนวณ
         if (!empty($project_costs) || !empty($project_benefits)) {
             ob_start();
@@ -381,6 +382,11 @@ if ($project_id) {
 
                     // เก็บข้อมูลใน session สำหรับการใช้งานครั้งต่อไป
                     $_SESSION[$session_key] = $sroi_table_data;
+                    
+                    // DEBUG: เก็บข้อมูล SROI ใน session เพื่อใช้ใน PDF export
+                    $_SESSION['sroi_npv'] = $sroi_table_data['npv'] ?? 'N/A';
+                    $_SESSION['sroi_ratio'] = $sroi_table_data['sroi_ratio'] ?? 'N/A';
+                    $_SESSION['sroi_irr'] = $sroi_table_data['irr'] ?? 'N/A';
                     $_SESSION['base_case_impact'] = $base_case_impact;
                     $data_source = 'calculated';
                 }
@@ -593,17 +599,50 @@ $form_data = [
     </style>
     
     <script>
-        // Function สำหรับ Export PDF
+        // Function สำหรับ Export PDF ด้วย POST Method
         function exportToPDF() {
             const projectId = <?php echo $selected_project_id ?: 0; ?>;
             if (projectId > 0) {
                 // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
                 if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
-                    window.open('export-pdf.php?project_id=' + projectId, '_blank');
+                    // ดึงค่า SROI ที่แสดงในหน้าปัจจุบัน
+                    const npvElement = document.querySelector('[data-sroi-npv]');
+                    const sroiElement = document.querySelector('[data-sroi-ratio]');
+                    const irrElement = document.querySelector('[data-sroi-irr]');
+                    
+                    // ถ้าไม่เจอ element ให้ใช้ PHP variables
+                    const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
+                    const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
+                    const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
+                    
+                    // สร้าง form และ submit
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = 'export-pdf.php';
+                    form.target = '_blank';
+                    
+                    // เพิ่ม hidden inputs
+                    form.appendChild(createHiddenInput('project_id', projectId));
+                    form.appendChild(createHiddenInput('npv', npv));
+                    form.appendChild(createHiddenInput('sroi_ratio', sroiRatio));
+                    form.appendChild(createHiddenInput('irr', irr));
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
                 }
             } else {
                 alert('กรุณาเลือกโครงการก่อน');
             }
+        }
+        
+        // Helper function สำหรับสร้าง hidden input
+        function createHiddenInput(name, value) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            return input;
         }
     </script>
 </head>
@@ -632,6 +671,7 @@ $form_data = [
                     <input type="hidden" name="project_id" value="<?php echo $project_id; ?>">
                 <?php endif; ?>
                 <div class="section">
+                    
                     <h3>ข้อมูลทั่วไปของโครงการ</h3>
                     <p style="margin: 20px 0; line-height: 1.6;">
                         โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '…………………………………….'; ?>
@@ -698,7 +738,7 @@ $form_data = [
 
                 <div class="section">
                     <h3>ตารางการเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
-                    <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
+                    <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-npv="<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? $sroi_table_data['npv'] : '0'; ?>"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-ratio="<?php echo $sroi_table_data ? $sroi_table_data['sroi_ratio'] : '0'; ?>"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;" data-sroi-irr="<?php echo $sroi_table_data && $sroi_table_data['irr'] != 'N/A' ? $sroi_table_data['irr'] : '0'; ?>"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     echo str_replace('%', '', $sroi_table_data['irr']);
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 } else {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     echo 'N/A';
@@ -1781,13 +1821,46 @@ $form_data = [
             </div>
 
             <script>
-                // Function สำหรับ Export PDF
+                // Helper function สำหรับสร้าง hidden input
+                function createHiddenInput(name, value) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    return input;
+                }
+
+                // Function สำหรับ Export PDF ด้วย POST Method
                 function exportToPDF() {
                     const projectId = <?php echo $selected_project_id ?: 0; ?>;
                     if (projectId > 0) {
                         // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
                         if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
-                            window.open('export-pdf.php?project_id=' + projectId, '_blank');
+                            // ดึงค่า SROI ที่แสดงในหน้าปัจจุบัน
+                            const npvElement = document.querySelector('[data-sroi-npv]');
+                            const sroiElement = document.querySelector('[data-sroi-ratio]');
+                            const irrElement = document.querySelector('[data-sroi-irr]');
+                            
+                            // ถ้าไม่เจอ element ให้ใช้ PHP variables
+                            const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
+                            const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
+                            const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
+                            
+                            // สร้าง form และ submit
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = 'export-pdf.php';
+                            form.target = '_blank';
+                            
+                            // เพิ่ม hidden inputs
+                            form.appendChild(createHiddenInput('project_id', projectId));
+                            form.appendChild(createHiddenInput('npv', npv));
+                            form.appendChild(createHiddenInput('sroi_ratio', sroiRatio));
+                            form.appendChild(createHiddenInput('irr', irr));
+                            
+                            document.body.appendChild(form);
+                            form.submit();
+                            document.body.removeChild(form);
                         }
                     } else {
                         alert('กรุณาเลือกโครงการก่อน');
@@ -2017,13 +2090,46 @@ $form_data = [
                     }
                 });
 
-                // ฟังก์ชันสำหรับออกรายงาน PDF
+                // Helper function สำหรับสร้าง hidden input
+                function createHiddenInput(name, value) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    return input;
+                }
+
+                // ฟังก์ชันสำหรับออกรายงาน PDF ด้วย POST Method
                 function exportToPDF() {
                     const projectId = <?php echo $selected_project_id ?: 0; ?>;
                     if (projectId > 0) {
                         // ตรวจสอบว่ามีการบันทึกข้อมูลแล้วหรือไม่
                         if (confirm('คุณต้องการออกรายงาน PDF หรือไม่?\n\nหากยังไม่ได้บันทึกข้อมูล กรุณาบันทึกก่อนออกรายงาน')) {
-                            window.open('export-pdf.php?project_id=' + projectId, '_blank');
+                            // ดึงค่า SROI ที่แสดงในหน้าปัจจุบัน
+                            const npvElement = document.querySelector('[data-sroi-npv]');
+                            const sroiElement = document.querySelector('[data-sroi-ratio]');
+                            const irrElement = document.querySelector('[data-sroi-irr]');
+                            
+                            // ถ้าไม่เจอ element ให้ใช้ PHP variables
+                            const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
+                            const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
+                            const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
+                            
+                            // สร้าง form และ submit
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = 'export-pdf.php';
+                            form.target = '_blank';
+                            
+                            // เพิ่ม hidden inputs
+                            form.appendChild(createHiddenInput('project_id', projectId));
+                            form.appendChild(createHiddenInput('npv', npv));
+                            form.appendChild(createHiddenInput('sroi_ratio', sroiRatio));
+                            form.appendChild(createHiddenInput('irr', irr));
+                            
+                            document.body.appendChild(form);
+                            form.submit();
+                            document.body.removeChild(form);
                         }
                     } else {
                         alert('กรุณาเลือกโครงการก่อน');

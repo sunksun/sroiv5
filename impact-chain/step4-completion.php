@@ -542,7 +542,7 @@ foreach ($impact_chains_data as $index => $chain_data) {
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" onclick="deleteItem()">
+                    <button type="button" class="btn btn-danger" onclick="deleteItem()" style="display: none;">
                         <i class="fas fa-trash"></i> ลบ
                     </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>

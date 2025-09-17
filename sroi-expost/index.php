@@ -35,12 +35,12 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
                         <i class="fas fa-arrow-left"></i> กลับไปหน้า Dashboard
                     </button>
                     <button class="btn btn-info" onclick="viewImpactChainSummary()">
-                        <i class="fas fa-sitemap"></i> สรุปเส้นทาง Impact Chain
+                        <i class="fas fa-sitemap"></i> สรุปเส้นทาง Impact Pathway
                     </button>
                     <button class="btn btn-primary" onclick="window.location.href='report-sroi.php<?php echo $selected_project_id ? '?project_id=' . $selected_project_id : ''; ?>'">
                         <i class="fas fa-chart-bar"></i> สร้างรายงาน
                     </button>
-                    <button class="btn btn-success" onclick="exportToExcel()">
+                    <button class="btn btn-success" onclick="exportToExcel()" style="display: none;">
                         <i class="fas fa-file-excel"></i> ส่งออก Excel
                     </button>
                 </div>
@@ -1055,7 +1055,7 @@ $selected_project = $selected_project_id ? getProjectById($conn, $selected_proje
         function viewImpactChainSummary() {
             const projectId = <?php echo $selected_project_id ?: 0; ?>;
             if (projectId > 0) {
-                window.location.href = '../impact-chain/summary.php?project_id=' + projectId;
+                window.location.href = 'impact-pathway-summary.php?project_id=' + projectId;
             } else {
                 alert('กรุณาเลือกโครงการก่อน');
             }

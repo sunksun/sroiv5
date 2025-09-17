@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$project_id = isset($_GET['project_id']) ? (int)$_GET['project_id'] : 0;
+$project_id = isset($_GET['project_id']) ? (int)$_GET['project_id'] : (isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0);
 
 if (!$project_id) {
     die("ไม่พบรหัสโครงการ");
@@ -101,16 +101,23 @@ $sroi_calculations = [];
 $project_impact_pathway = $_SESSION['project_impact_pathway'] ?? [];
 $project_benefits = $_SESSION['project_benefits'] ?? [];
 
-// ดึงข้อมูล SROI calculations
+// ดึงข้อมูล SROI calculations จาก POST หรือ session
 $sroi_calculations = [
-    'npv' => $_SESSION['sroi_npv'] ?? 'N/A',
-    'sroi_ratio' => $_SESSION['sroi_ratio'] ?? 'N/A', 
-    'irr' => $_SESSION['sroi_irr'] ?? 'N/A'
+    'npv' => isset($_POST['npv']) ? floatval($_POST['npv']) : ($_SESSION['sroi_npv'] ?? 'N/A'),
+    'sroi_ratio' => isset($_POST['sroi_ratio']) ? floatval($_POST['sroi_ratio']) : ($_SESSION['sroi_ratio'] ?? 'N/A'), 
+    'irr' => isset($_POST['irr']) ? floatval($_POST['irr']) : ($_SESSION['sroi_irr'] ?? 'N/A')
 ];
+
+// Debug: แสดงที่มาของข้อมูล
+error_log("SROI Data Source: " . (isset($_POST['npv']) ? 'POST' : 'SESSION'));
+error_log("NPV from POST: " . ($_POST['npv'] ?? 'NOT SET'));
+error_log("SROI from POST: " . ($_POST['sroi_ratio'] ?? 'NOT SET'));
+error_log("IRR from POST: " . ($_POST['irr'] ?? 'NOT SET'));
 
 // Debug: ตรวจสอบข้อมูลที่ดึงมาจาก session
 error_log("DEBUG export-pdf.php - project_benefits from session: " . print_r($project_benefits, true));
 error_log("DEBUG export-pdf.php - available_years from session: " . print_r($available_years, true));
+
 
 // ถ้าไม่มีข้อมูลใน session ให้ลองดึงโดยตรงจากฐานข้อมูล
 if (empty($project_benefits['benefits']) && file_exists('includes/functions.php')) {

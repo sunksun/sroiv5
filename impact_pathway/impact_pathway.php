@@ -1238,7 +1238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </form>
                     
                     <!-- เพิ่มข้อมูลใหม่ -->
-                    <a href="impact_pathway.php?project_id=<?php echo $project_id; ?>&add_new=1" class="btn btn-success" style="margin-left: 10px;">
+                    <a href="impact_pathway.php?project_id=<?php echo $project_id; ?>&add_new=1" class="btn btn-success" style="margin-left: 10px; display: none;">
                         ➕ เพิ่มข้อมูลใหม่
                     </a>
                 </div>
