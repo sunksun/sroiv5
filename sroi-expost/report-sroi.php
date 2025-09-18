@@ -164,12 +164,12 @@ if ($project_id) {
 
     // ตรวจสอบว่ามีการขอ refresh หรือไม่
     $force_refresh = isset($_GET['refresh']) && $_GET['refresh'] == '1';
-    
+
     // หากขอ refresh ให้ลบข้อมูลเก่าใน session
     if ($force_refresh && isset($_SESSION[$session_key])) {
         unset($_SESSION[$session_key]);
     }
-    
+
     // ลบ cache เก่าทันทีเพื่อบังคับคำนวณใหม่ (ชั่วคราวสำหรับแก้ไข IRR)
     if (isset($_SESSION[$session_key])) {
         $temp_data = $_SESSION[$session_key];
@@ -177,7 +177,7 @@ if ($project_id) {
             unset($_SESSION[$session_key]); // ลบข้อมูล IRR ที่ผิด
         }
     }
-    
+
     // ลองดึงข้อมูลจาก session ก่อน (เว้นแต่จะขอ refresh)
     if (isset($_SESSION[$session_key]) && !$force_refresh) {
         $sroi_table_data = $_SESSION[$session_key];
@@ -270,7 +270,7 @@ if ($project_id) {
                 $project_benefits = $benefit_data; // เก็บข้อมูลทั้งหมด
                 $benefit_notes_by_year = $benefit_data['benefit_notes_by_year'] ?? [];
                 $base_case_factors = $benefit_data['base_case_factors'] ?? [];
-                
+
                 // เก็บข้อมูลลง session สำหรับ PDF export
                 $_SESSION['project_benefits'] = $project_benefits;
                 $_SESSION['available_years'] = $available_years;
@@ -278,7 +278,7 @@ if ($project_id) {
                 $project_benefits = ['benefits' => [], 'benefit_notes_by_year' => [], 'base_case_factors' => []];
                 $benefit_notes_by_year = [];
                 $base_case_factors = [];
-                
+
                 // เก็บข้อมูลลง session สำหรับ PDF export
                 $_SESSION['project_benefits'] = $project_benefits;
             }
@@ -320,7 +320,7 @@ if ($project_id) {
 
         // เก็บค่า base_case_impact ที่คำนวณไว้ก่อนที่จะ include output-section.php
         $calculated_base_case_impact = $base_case_impact;
-        
+
         // เก็บค่า base_case_impact ลง session หลังจากคำนวณแล้ว
         $_SESSION['base_case_impact'] = $base_case_impact;
 
@@ -347,7 +347,7 @@ if ($project_id) {
         $sroi_ratio = 0;
         $irr = 'N/A';
 
-        
+
         // ถ้ามีข้อมูลต้นทุนหรือผลประโยชน์ ให้ include output-section เพื่อคำนวณ
         if (!empty($project_costs) || !empty($project_benefits)) {
             ob_start();
@@ -382,7 +382,7 @@ if ($project_id) {
 
                     // เก็บข้อมูลใน session สำหรับการใช้งานครั้งต่อไป
                     $_SESSION[$session_key] = $sroi_table_data;
-                    
+
                     // DEBUG: เก็บข้อมูล SROI ใน session เพื่อใช้ใน PDF export
                     $_SESSION['sroi_npv'] = $sroi_table_data['npv'] ?? 'N/A';
                     $_SESSION['sroi_ratio'] = $sroi_table_data['sroi_ratio'] ?? 'N/A';
@@ -420,7 +420,7 @@ if ($project_id) {
             mysqli_stmt_bind_param($report_stmt, "i", $project_id);
             mysqli_stmt_execute($report_stmt);
             $report_result = mysqli_stmt_get_result($report_stmt);
-            
+
             if ($report_row = mysqli_fetch_assoc($report_result)) {
                 $saved_report_data = json_decode($report_row['report_data'], true) ?: [];
             }
@@ -597,7 +597,7 @@ $form_data = [
             }
         }
     </style>
-    
+
     <script>
         // Function สำหรับ Export PDF ด้วย POST Method
         function exportToPDF() {
@@ -609,24 +609,24 @@ $form_data = [
                     const npvElement = document.querySelector('[data-sroi-npv]');
                     const sroiElement = document.querySelector('[data-sroi-ratio]');
                     const irrElement = document.querySelector('[data-sroi-irr]');
-                    
+
                     // ถ้าไม่เจอ element ให้ใช้ PHP variables
                     const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
                     const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
                     const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
-                    
+
                     // สร้าง form และ submit
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = 'export-pdf.php';
                     form.target = '_blank';
-                    
+
                     // เพิ่ม hidden inputs
                     form.appendChild(createHiddenInput('project_id', projectId));
                     form.appendChild(createHiddenInput('npv', npv));
                     form.appendChild(createHiddenInput('sroi_ratio', sroiRatio));
                     form.appendChild(createHiddenInput('irr', irr));
-                    
+
                     document.body.appendChild(form);
                     form.submit();
                     document.body.removeChild(form);
@@ -635,7 +635,7 @@ $form_data = [
                 alert('กรุณาเลือกโครงการก่อน');
             }
         }
-        
+
         // Helper function สำหรับสร้าง hidden input
         function createHiddenInput(name, value) {
             const input = document.createElement('input');
@@ -671,7 +671,7 @@ $form_data = [
                     <input type="hidden" name="project_id" value="<?php echo $project_id; ?>">
                 <?php endif; ?>
                 <div class="section">
-                    
+
                     <h3>ข้อมูลทั่วไปของโครงการ</h3>
                     <p style="margin: 20px 0; line-height: 1.6;">
                         โครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : '…………………………………….'; ?>
@@ -699,8 +699,8 @@ $form_data = [
                     <div class="text-center">
                         <img src="../assets/imgs/SROI-STEPS.jpg" alt="ขั้นตอนการประเมิน SROI" class="img-fluid" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                     </div>
-                    
->
+
+                    >
                 </div>
 
                 <div class="section">
@@ -739,20 +739,20 @@ $form_data = [
                 <div class="section">
                     <h3>ตารางการเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
                     <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-npv="<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? $sroi_table_data['npv'] : '0'; ?>"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-ratio="<?php echo $sroi_table_data ? $sroi_table_data['sroi_ratio'] : '0'; ?>"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;" data-sroi-irr="<?php echo $sroi_table_data && $sroi_table_data['irr'] != 'N/A' ? $sroi_table_data['irr'] : '0'; ?>"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    echo str_replace('%', '', $sroi_table_data['irr']);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                } else {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    echo 'N/A';
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }                                                                                                                                                                                 ?></span> ซึ่ง<?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? (floatval(str_replace('%', '', $sroi_table_data['irr'])) < $saved_discount_rate ? 'น้อยกว่า' : 'มากกว่า') : 'เปรียบเทียบกับ'; ?>อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate, 2); ?> โดยมีรายละเอียด ดังนี้</p>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    echo str_replace('%', '', $sroi_table_data['irr']);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                } else {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    echo 'N/A';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }                                                                                                                                                                                 ?></span> ซึ่ง<?php echo $sroi_table_data && isset($sroi_table_data['irr']) && $sroi_table_data['irr'] != 'N/A' ? (floatval(str_replace('%', '', $sroi_table_data['irr'])) < $saved_discount_rate ? 'น้อยกว่า' : 'มากกว่า') : 'เปรียบเทียบกับ'; ?>อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate, 2); ?> โดยมีรายละเอียด ดังนี้</p>
 
-                    <p style="margin-bottom: 20px; line-height: 1.6;">จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> 
+                    <p style="margin-bottom: 20px; line-height: 1.6;">จากการสัมภาษณ์ผู้ได้รับประโยชน์โดยตรงจากโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span>
                         สามารถเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without) ได้ดังตารางที่ 1
                     </p>
-                    
+
                     <div class="form-group">
                         <label for="interviewee_name">ผู้ให้สัมภาษณ์:</label>
                         <input type="text" id="interviewee_name" name="interviewee_name" placeholder="เช่น นาย/นาง ชื่อ-นามสกุล ตัวแทนกลุ่มวิสาหกิจ/ชาวบ้าน" value="<?php echo htmlspecialchars($form_data['interviewee_name']); ?>" />
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="interviewee_count">จำนวนผู้ให้สัมภาษณ์:</label>
                         <input type="number" id="interviewee_count" name="interviewee_count" placeholder="0" min="1" style="width: 100px;" value="<?php echo $form_data['interviewee_count'] > 0 ? $form_data['interviewee_count'] : ''; ?>" /> คน/กลุ่ม
@@ -1385,11 +1385,11 @@ $form_data = [
                         <div style="margin-top: 20px;">
                             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
                                 <div style="font-size: 24px; font-weight: bold;">
-                                    <?php 
+                                    <?php
                                     $display_base_case_impact = $sroi_table_data && isset($sroi_table_data['base_case_impact']) ? $sroi_table_data['base_case_impact'] : ($base_case_impact ?? 0);
                                     // เก็บค่าที่แสดงจริงลง session สำหรับ PDF
                                     $_SESSION['display_base_case_impact'] = $display_base_case_impact;
-                                    echo number_format($display_base_case_impact, 2, '.', ','); 
+                                    echo number_format($display_base_case_impact, 2, '.', ',');
                                     ?>
                                 </div>
                                 <div style="font-size: 14px; margin-top: 5px;">ผลกระทบกรณีฐานรวมปัจจุบัน (บาท)</div>
@@ -1401,7 +1401,7 @@ $form_data = [
                 <div class="section">
                     <h3>ตารางที่ 4 ผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI)</h3>
                     <div class="form-group">
-                        <p style="margin: 20px 0; line-height: 1.6;">เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้โปรแกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง และคณะ (2566) สามารถสรุปผลได้ดังตารางที่ 4</p>
+                        <p style="margin: 20px 0; line-height: 1.6;">เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ <?php echo number_format($saved_discount_rate ?? 2.5, 2); ?> ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?> (ธนาคารแห่งประเทศไทย, <?php echo isset($available_years[0]) ? $available_years[0]['year_be'] : (date('Y') + 543); ?>) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้ LRU SROI Web Application ซึ่งปรับปรุงมาจาก โปรเเกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง เเละคณะ(2566) สามารถสรุปผลได้ดังตารางที่ 4</p>
 
                         <p style="margin: 15px 0; line-height: 1.6;">
                             ตารางที่ 4 ผลประโยชน์ที่เกิดขึ้นจากดำเนินโครงการ<?php echo $selected_project ? htmlspecialchars($selected_project['name']) : ''; ?>
@@ -1456,7 +1456,7 @@ $form_data = [
                             ซึ่งแสดงให้เห็นว่าเงินลงทุน 1 บาทจะได้ผลตอบแทนทางสังคมกลับมา <?php echo number_format($display_sroi, 2, '.', ','); ?> บาท
                             จึง<?php echo $display_sroi >= 1 ? 'คุ้มค่า' : 'ยังไม่คุ้มค่า'; ?>ต่อการลงทุน
                             <?php if ($display_sroi < 1): ?>
-                                เนื่องจากเป็นโครงการในระยะสั้นจึงยังไม่เกิดผลกระทบในพื้นที่
+                                เนื่องจากระยะเวลาในการดำเนินโครงการ 1 ปี อาจจะทำให้ผลผลิตของโครงการยังไม่ได้ใช้ประโยชน์อย่างเต็มที่ จึงทำให้ผลลัพธ์ของโครงการที่เกิดขึ้นมีมูลค่าน้อย ส่งผลทำให้ SROI น้อยกว่า 1
                             <?php else: ?>
                                 แสดงให้เห็นว่าโครงการสร้างคุณค่าทางสังคมให้กับชุมชน
                             <?php endif; ?>
@@ -1768,7 +1768,7 @@ $form_data = [
                 <h3>ผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI)</h3>
                 <p>โครงการ<span class="highlight"><?php echo htmlspecialchars($evaluation_project); ?></span>ประเมินหลังจากการดำเนินโครงการเสร็จสิ้น (Ex-Post Evaluation) ณ ปี พ.ศ. <?php echo htmlspecialchars($project_year); ?></p>
 
-                <p>เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ 2.00 ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. <?php echo htmlspecialchars($project_year); ?> (ธนาคารแห่งประเทศไทย, <?php echo htmlspecialchars($project_year); ?>) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้โปรแกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง และคณะ (2566)</p>
+                <p>เมื่อทราบถึงผลประโยชน์ที่เกิดขึ้นหลังจากหักกรณีฐานแล้วนำมาเปรียบเทียบกับต้นทุน เพื่อประเมินผลตอบแทนทางสังคมจากการลงทุน โดยใช้อัตราคิดลดร้อยละ 2.00 ซึ่งคิดจากค่าเสียโอกาสในการลงทุนด้วยอัตราดอกเบี้ยพันธบัตรออมทรัพย์เฉลี่ยในปี พ.ศ. <?php echo htmlspecialchars($project_year); ?> (ธนาคารแห่งประเทศไทย, <?php echo htmlspecialchars($project_year); ?>) ซึ่งเป็นปีที่ดำเนินการ มีผลการวิเคราะห์โดยใช้ LRU SROI Web Application ซึ่งปรับปรุงมาจาก โปรเเกรมการวิเคราะห์ของ เศรษฐภูมิ บัวทอง เเละคณะ(2566)</p>
 
                 <h3>สรุปผลการประเมิน</h3>
                 <p>จากการวิเคราะห์พบว่าเมื่อผลการประเมินผลตอบแทนทางสังคมจากการลงทุน (SROI) มีค่า <span class="highlight"><?php echo number_format($sroi_value, 2); ?></span> ซึ่งมีค่า<span class="highlight"><?php echo htmlspecialchars($investment_status == 'คุ้มค่าการลงทุน' ? 'มากกว่า 1' : 'น้อยกว่า 1'); ?></span> ค่า NPV เท่ากับ <span class="highlight"><?php echo number_format($npv_value, 2); ?></span> มีค่า<span class="highlight"><?php echo htmlspecialchars($npv_status); ?></span> และค่า IRR มีค่าร้อยละ<span class="highlight"><?php echo number_format($irr_value, 2); ?></span> ซึ่ง<span class="highlight"><?php echo htmlspecialchars($irr_compare); ?></span>อัตราคิดลด ร้อยละ 2.00</p>
@@ -1840,24 +1840,24 @@ $form_data = [
                             const npvElement = document.querySelector('[data-sroi-npv]');
                             const sroiElement = document.querySelector('[data-sroi-ratio]');
                             const irrElement = document.querySelector('[data-sroi-irr]');
-                            
+
                             // ถ้าไม่เจอ element ให้ใช้ PHP variables
                             const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
                             const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
                             const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
-                            
+
                             // สร้าง form และ submit
                             const form = document.createElement('form');
                             form.method = 'POST';
                             form.action = 'export-pdf.php';
                             form.target = '_blank';
-                            
+
                             // เพิ่ม hidden inputs
                             form.appendChild(createHiddenInput('project_id', projectId));
                             form.appendChild(createHiddenInput('npv', npv));
                             form.appendChild(createHiddenInput('sroi_ratio', sroiRatio));
                             form.appendChild(createHiddenInput('irr', irr));
-                            
+
                             document.body.appendChild(form);
                             form.submit();
                             document.body.removeChild(form);
@@ -2109,24 +2109,24 @@ $form_data = [
                             const npvElement = document.querySelector('[data-sroi-npv]');
                             const sroiElement = document.querySelector('[data-sroi-ratio]');
                             const irrElement = document.querySelector('[data-sroi-irr]');
-                            
+
                             // ถ้าไม่เจอ element ให้ใช้ PHP variables
                             const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
                             const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
                             const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
-                            
+
                             // สร้าง form และ submit
                             const form = document.createElement('form');
                             form.method = 'POST';
                             form.action = 'export-pdf.php';
                             form.target = '_blank';
-                            
+
                             // เพิ่ม hidden inputs
                             form.appendChild(createHiddenInput('project_id', projectId));
                             form.appendChild(createHiddenInput('npv', npv));
                             form.appendChild(createHiddenInput('sroi_ratio', sroiRatio));
                             form.appendChild(createHiddenInput('irr', irr));
-                            
+
                             document.body.appendChild(form);
                             form.submit();
                             document.body.removeChild(form);
@@ -2168,17 +2168,17 @@ $form_data = [
                     showStatus('<?php echo addslashes($_SESSION['error_message']); ?>', 'error');
                     <?php unset($_SESSION['error_message']); ?>
                 <?php endif; ?>
-                
+
                 // Debug form submission
                 document.getElementById('report-form').addEventListener('submit', function(e) {
                     console.log('Form is being submitted');
                     console.log('Form action:', this.action);
                     console.log('Form method:', this.method);
-                    
+
                     // Check if required fields have data
                     const projectId = document.querySelector('input[name="project_id"]');
                     console.log('Project ID:', projectId ? projectId.value : 'not found');
-                    
+
                     // Show loading message
                     showStatus('กำลังบันทึกข้อมูล...', 'info');
                 });

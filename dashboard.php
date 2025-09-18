@@ -848,6 +848,10 @@ function formatThaiDate($date)
                                                         class="btn btn-outline-secondary btn-sm" title="ดูรายละเอียด">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
+                                                    <button onclick="deleteProjectData(<?php echo $project['id']; ?>)"
+                                                        class="btn btn-outline-danger btn-sm" title="ลบข้อมูล Impact Chain/Pathway">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -953,6 +957,7 @@ function formatThaiDate($date)
             </div>
         </div>
     </div>
+
 
     <script>
         // Initialize dashboard
@@ -1106,13 +1111,7 @@ function formatThaiDate($date)
         styleSheet.textContent = mobileStyles;
         document.head.appendChild(styleSheet);
 
-        // Add mobile menu toggle button
-        const navContainer = document.querySelector('.nav-container');
-        const mobileToggle = document.createElement('button');
-        mobileToggle.className = 'mobile-menu-toggle';
-        mobileToggle.innerHTML = '☰';
-        mobileToggle.onclick = toggleMobileMenu;
-        navContainer.insertBefore(mobileToggle, navContainer.querySelector('.nav-menu'));
+        // Skip mobile menu setup for now (not needed for main functionality)
 
         // Local storage for user preferences
         function saveUserPreference(key, value) {
@@ -1133,22 +1132,20 @@ function formatThaiDate($date)
             saveUserPreference('chartPeriod', this.value);
         });
 
-        // Performance monitoring
-        function measurePerformance() {
-            if ('performance' in window) {
-                window.addEventListener('load', () => {
+        // Performance monitoring (simplified)
+        if ('performance' in window && performance.timing) {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
                     const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-                    console.log(`Dashboard loaded in ${loadTime}ms`);
-
-                    // Could send to analytics
-                    if (loadTime > 3000) {
-                        console.warn('Slow dashboard load time detected');
+                    if (loadTime > 0 && loadTime < 60000) { // เฉพาะค่าที่สมเหตุสมผล
+                        console.log(`Dashboard loaded in ${loadTime}ms`);
+                        if (loadTime > 3000) {
+                            console.warn('Slow dashboard load time detected');
+                        }
                     }
-                });
-            }
+                }, 100);
+            });
         }
-
-        measurePerformance();
 
         // Accessibility improvements
         function enhanceAccessibility() {
@@ -1186,6 +1183,49 @@ function formatThaiDate($date)
         document.head.appendChild(a11yStyleSheet);
 
         console.log('🎯 SROI Dashboard initialized successfully!');
+        
+        // ฟังก์ชันสำหรับลบข้อมูล Impact Chain และ Impact Pathway (ใช้ alert ธรรมดา)
+        window.deleteProjectData = function(projectId) {
+            // แสดง confirmation dialog ธรรมดา
+            const confirmMessage = "คุณต้องการลบข้อมูล Impact Chain และ Impact Pathway ทั้งหมดของโครงการนี้หรือไม่?\n\n" +
+                "คำเตือน: การดำเนินการนี้จะลบข้อมูลต่อไปนี้อย่างถาวร:\n" +
+                "• ข้อมูล Impact Chain ทั้งหมด (กลยุทธ์, กิจกรรม, ผลผลิต, ผลลัพธ์)\n" +
+                "• ข้อมูล Impact Pathway ทั้งหมด (ต้นทุน, ผลประโยชน์, อัตราส่วน)\n" +
+                "• ข้อมูลการวิเคราะห์ Base Case และ Benefit Notes\n\n" +
+                "หมายเหตุ: ข้อมูลโครงการหลัก (ชื่อ, งบประมาณ, รายละเอียด) จะไม่ถูกลบ";
+            
+            if (confirm(confirmMessage)) {
+                performDelete(projectId);
+            }
+        };
+        
+        function performDelete(projectId) {
+            // ส่งคำขอลบข้อมูลโดยไม่แสดง alert ขณะดำเนินการ
+            const formData = new FormData();
+            formData.append('project_id', projectId);
+            
+            fetch('api/delete-project-data.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // แสดงข้อความสำเร็จ
+                    alert('สำเร็จ!\n\n' + data.message);
+                    
+                    // รีเฟรชหน้า
+                    location.reload();
+                } else {
+                    // แสดงข้อความข้อผิดพลาด
+                    alert('เกิดข้อผิดพลาด!\n\n' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาด!\n\nไม่สามารถติดต่อกับเซิร์ฟเวอร์ได้');
+            });
+        }
     </script>
 </body>
 
