@@ -13,6 +13,12 @@ try {
     die("Database connection error: " . $e->getMessage());
 }
 
+// ฟังก์ชันสำหรับ sanitize HTML ให้ปลอดภัยแต่อนุญาต tags พื้นฐาน
+function sanitizeHTML($html) {
+    $allowed_tags = '<p><br><strong><b><em><i><u><ol><ul><li><h1><h2><h3>';
+    return strip_tags($html, $allowed_tags);
+}
+
 // ดึงข้อมูลโครงการ
 $projects = [];
 $selected_project = null;
@@ -613,7 +619,7 @@ $form_data = [
                     // ถ้าไม่เจอ element ให้ใช้ PHP variables
                     const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
                     const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
-                    const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
+                    const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "N/A"; ?>';
 
                     // สร้าง form และ submit
                     const form = document.createElement('form');
@@ -645,6 +651,24 @@ $form_data = [
             return input;
         }
     </script>
+    
+    <style>
+        /* Ordered list styling for HTML content */
+        ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        ol li {
+            margin-bottom: 0.5rem;
+            padding-left: 0.25rem;
+        }
+        
+        ol li::marker {
+            font-weight: normal;
+        }
+    </style>
 </head>
 
 <body>
@@ -699,8 +723,6 @@ $form_data = [
                     <div class="text-center">
                         <img src="../assets/imgs/SROI-STEPS.jpg" alt="ขั้นตอนการประเมิน SROI" class="img-fluid" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                     </div>
-
-                    >
                 </div>
 
                 <div class="section">
@@ -738,7 +760,7 @@ $form_data = [
 
                 <div class="section">
                     <h3>ตารางการเปรียบเทียบการเปลี่ยนแปลงก่อนและหลังการเกิดขึ้นของโครงการ (With and Without)</h3>
-                    <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-npv="<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? $sroi_table_data['npv'] : '0'; ?>"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-ratio="<?php echo $sroi_table_data ? $sroi_table_data['sroi_ratio'] : '0'; ?>"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;" data-sroi-irr="<?php echo $sroi_table_data && $sroi_table_data['irr'] != 'N/A' ? $sroi_table_data['irr'] : '0'; ?>"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
+                    <p style="margin-bottom: 20px; line-height: 1.6;">ผลการประเมินผลตอบแทนทางสังคม (SROI) พบว่าโครงการ<span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;"><?php echo $selected_project ? htmlspecialchars($selected_project['name']) : 'ไม่ระบุชื่อโครงการ'; ?></span> มีมูลค่าผลประโยชน์ปัจจุบันสุทธิของโครงการ (Net Present Value หรือ NPV โดยอัตราคิดลด <?php echo number_format($saved_discount_rate, 2); ?>%) <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-npv="<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? $sroi_table_data['npv'] : '0'; ?>"><?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? number_format($sroi_table_data['npv'], 2, '.', ',') : '0'; ?> บาท</span> (ซึ่งมีค่า<?php echo $sroi_table_data && isset($sroi_table_data['npv']) ? ($sroi_table_data['npv'] >= 0 ? 'มากกว่า 0' : 'น้อยกว่า 0') : 'ไม่ทราบ'; ?>) และค่าผลตอบแทนทางสังคมจากการลงทุน <span style="background-color: #C8E6C9; padding: 2px 6px; border-radius: 4px; color: #388E3C; font-weight: bold;" data-sroi-ratio="<?php echo $sroi_table_data ? $sroi_table_data['sroi_ratio'] : '0'; ?>"><?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?></span> หมายความว่าเงินลงทุนของโครงการ 1 บาท จะสามารถสร้างผลตอบแทนทางสังคมเป็นเงิน <?php echo $sroi_table_data ? number_format($sroi_table_data['sroi_ratio'], 2, '.', ',') : '0.00'; ?> บาท ซึ่งถือว่า<?php echo $sroi_table_data && isset($sroi_table_data['sroi_ratio']) ? ($sroi_table_data['sroi_ratio'] >= 1 ? 'คุ้มค่าการลงทุน' : 'ไม่คุ้มค่าการลงทุน') : 'ไม่ทราบ'; ?> และมีอัตราผลตอบแทนภายใน (Internal Rate of Return หรือ IRR) ร้อยละ <span style="background-color: #FFE082; padding: 2px 6px; border-radius: 4px; color: #F57C00; font-weight: bold;" data-sroi-irr="<?php echo $sroi_table_data && $sroi_table_data['irr'] != 'N/A' ? $sroi_table_data['irr'] : 'N/A'; ?>"><?php if ($sroi_table_data && $sroi_table_data['irr'] != 'N/A') {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     echo str_replace('%', '', $sroi_table_data['irr']);
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 } else {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     echo 'N/A';
@@ -1009,6 +1031,12 @@ $form_data = [
                         }
                         mysqli_stmt_close($new_stmt);
                     }
+
+                    // Debug: ตรวจสอบข้อมูลผู้ใช้ประโยชน์
+                    echo "<!-- DEBUG: Total project_beneficiaries_ip: " . count($project_beneficiaries_ip) . " -->";
+                    foreach ($project_beneficiaries_ip as $i => $ben) {
+                        echo "<!-- DEBUG $i: " . htmlspecialchars($ben['benefit_number'] . " - " . $ben['beneficiary']) . " -->";
+                    }
                     ?>
 
                     <!-- Impact Pathway Display Table -->
@@ -1033,8 +1061,8 @@ $form_data = [
                                                 <td rowspan="<?php echo count($project_activities_ip); ?>" style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
                                                     <?php if (!empty($existing_pathways_ip)): ?>
                                                         <?php foreach ($existing_pathways_ip as $pathway): ?>
-                                                            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                                                                <?php echo htmlspecialchars($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?>
+                                                            <div style="background: #f8f9fa; border: 0px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                                                                <?php echo sanitizeHTML($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?>
                                                             </div>
                                                         <?php endforeach; ?>
                                                     <?php else: ?>
@@ -1045,7 +1073,7 @@ $form_data = [
 
                                             <!-- กิจกรรม -->
                                             <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
-                                                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; font-size: 0.85rem;">
+                                                <div style="padding: 0.5rem; font-size: 0.85rem;">
                                                     <div style="font-weight: bold; color: #667eea;"><strong><?php echo ($activity_index + 1); ?></strong>.</div>
                                                     <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($activity['activity_name']); ?></div>
                                                     <?php if (!empty($activity['activity_description'])): ?>
@@ -1070,7 +1098,7 @@ $form_data = [
                                                 ?>
                                                 <?php if (!empty($activity_outputs)): ?>
                                                     <?php foreach ($activity_outputs as $output_index => $output): ?>
-                                                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                                                        <div style="padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
                                                             <div style="font-weight: bold; color: #667eea;"><strong><?php echo ($output_index + 1); ?></strong>.</div>
                                                             <div style="color: #333; margin-top: 0.25rem;">
                                                                 <?php echo htmlspecialchars(
@@ -1086,33 +1114,26 @@ $form_data = [
                                                 <?php endif; ?>
                                             </td>
 
-                                            <!-- ผู้ใช้ประโยชน์ - แสดงตามแต่ละแถว -->
-                                            <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
-                                                <?php
-                                                // แสดงผู้ใช้ประโยชน์แยกตามแต่ละกิจกรรม/แถว
-                                                $activity_beneficiaries = [];
-
-                                                // ให้แต่ละแถวแสดงผู้ใช้ประโยชน์ตามลำดับ
-                                                if (isset($project_beneficiaries_ip[$activity_index])) {
-                                                    $activity_beneficiaries[] = $project_beneficiaries_ip[$activity_index];
-                                                }
-                                                ?>
-                                                <?php if (!empty($activity_beneficiaries)): ?>
-                                                    <?php foreach ($activity_beneficiaries as $beneficiary): ?>
-                                                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; font-size: 0.85rem;">
-                                                            <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
-                                                            <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
-                                                            <?php if (!empty($beneficiary['benefit_detail'])): ?>
-                                                                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                                    รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
-                                                                </div>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <small style="color: #6c757d;">ไม่มีผู้ใช้ประโยชน์สำหรับแถวที่ <?php echo ($activity_index + 1); ?></small>
-                                                <?php endif; ?>
-                                            </td>
+                                            <!-- ผู้ใช้ประโยชน์ - แสดงทั้งหมดในแถวแรกเท่านั้น -->
+                                            <?php if ($activity_index == 0): ?>
+                                                <td rowspan="<?php echo count($project_activities_ip); ?>" style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; vertical-align: top; font-size: 0.9rem;">
+                                                    <?php if (!empty($project_beneficiaries_ip)): ?>
+                                                        <?php foreach ($project_beneficiaries_ip as $beneficiary): ?>
+                                                            <div style="padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                                                                <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
+                                                                <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
+                                                                <?php if (!empty($beneficiary['benefit_detail'])): ?>
+                                                                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                                                                        รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <small style="color: #6c757d;">ไม่มีข้อมูลผู้ใช้ประโยชน์</small>
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endif; ?>
 
                                             <!-- ผลลัพธ์ - ดึงผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้ -->
                                             <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
@@ -1128,7 +1149,7 @@ $form_data = [
                                                 ?>
                                                 <?php if (!empty($activity_outcomes)): ?>
                                                     <?php foreach ($activity_outcomes as $outcome_index => $outcome): ?>
-                                                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                                                        <div style="padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
                                                             <div style="font-weight: bold; color: #667eea;"><strong><?php echo ($outcome_index + 1); ?></strong>.</div>
                                                             <div style="color: #333; margin-top: 0.25rem;">
                                                                 <?php
@@ -1152,8 +1173,8 @@ $form_data = [
                                                 <td rowspan="<?php echo count($project_activities_ip); ?>" style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
                                                     <?php if (!empty($existing_pathways_ip)): ?>
                                                         <?php foreach ($existing_pathways_ip as $pathway): ?>
-                                                            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                                                                <?php echo htmlspecialchars($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?>
+                                                            <div style="padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                                                                <?php echo sanitizeHTML($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?>
                                                             </div>
                                                         <?php endforeach; ?>
                                                     <?php else: ?>
@@ -1178,7 +1199,7 @@ $form_data = [
                 <div class="section">
                     <h3>ตารางที่ 3 ผลกระทบกรณีฐาน (Base Case Impact)</h3>
                     <div class="form-group">
-                        <p style="margin: 20px 0; line-height: 1.6;">จากการวิเคราะห์เส้นทางผลกระทบทางสังคม (Social Impact Pathway) ที่แสดงดังตารางที่ 2 สามารถนำมาคำนวณผลประโยชน์ที่เกิดขึ้นของโครงการ ได้ดังนี้</p>
+                        <p style="margin: 20px 0; line-height: 1.6;">การวิเคราะห์กรณีฐานที่เกิดจากผลกระทบส่วนเกิน (Deadweight) ผลกระทบที่เกิดจากปัจจัยอื่น (Attribution) เเละผลกระทบด้านการทดแทน (Displacement) จากผลลัพธ์ของโครงการ มีดังนี้</p>
 
                         <h4 style="color: #667eea; margin-bottom: 15px;">ผลจากปัจจัยอื่นๆ (Attribution)</h4>
                         <div style="overflow-x: auto;">
@@ -1465,6 +1486,18 @@ $form_data = [
                 </div>
 
                 <div style="text-align: center;">
+                    <!-- คำแนะนำการใช้งาน -->
+                    <div style="background: linear-gradient(135deg, #e3f2fd, #f3e5f5); border: 1px solid #90caf9; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                            <i class="fas fa-info-circle" style="color: #1976d2; margin-right: 8px; font-size: 18px;"></i>
+                            <h4 style="margin: 0; color: #1976d2; font-size: 16px;">คำแนะนำการใช้งาน</h4>
+                        </div>
+                        <p style="margin: 0; color: #424242; line-height: 1.5;">
+                            <strong>ขั้นตอนที่ 1:</strong> กดปุ่ม <span style="color: #1976d2;">"บันทึกข้อมูลรายงาน"</span> เพื่อบันทึกข้อมูลที่กรอกในรายงานนี้<br>
+                            <strong>ขั้นตอนที่ 2:</strong> หลังจากบันทึกเรียบร้อยแล้ว จึงกดปุ่ม <span style="color: #d32f2f;">"ออกรายงาน PDF"</span> เพื่อส่งออกเอกสาร
+                        </p>
+                    </div>
+
                     <div style="text-align: center; margin: 30px 0; padding: 20px; border-top: 2px solid #dee2e6;">
                         <button type="submit" class="btn btn-primary" style="margin-right: 15px; padding: 12px 30px; font-size: 16px;">
                             <i class="fas fa-save"></i> บันทึกข้อมูลรายงาน
@@ -1566,7 +1599,26 @@ $form_data = [
                                                 <?php echo isset($pathway_output[$i]) ? nl2br(htmlspecialchars($pathway_output[$i])) : ''; ?>
                                             </td>
                                             <td style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
-                                                <?php echo isset($pathway_user[$i]) ? nl2br(htmlspecialchars($pathway_user[$i])) : ''; ?>
+                                                <?php
+                                                // แสดงผู้ใช้ประโยชน์จากฐานข้อมูล ถ้ามี หรือจากฟอร์มถ้าไม่มี
+                                                if (!empty($project_beneficiaries_ip) && $i == 0):
+                                                    // แสดงทั้งหมดในแถวแรก
+                                                    foreach ($project_beneficiaries_ip as $beneficiary): ?>
+                                                        <div style="margin-bottom: 8px;">
+                                                            <strong><?php echo htmlspecialchars($beneficiary['benefit_number']); ?>.</strong>
+                                                            <?php echo htmlspecialchars($beneficiary['beneficiary']); ?>
+                                                            <?php if (!empty($beneficiary['benefit_detail'])): ?>
+                                                                <br><small style="color: #666;"><?php echo htmlspecialchars($beneficiary['benefit_detail']); ?></small>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                <?php endforeach;
+                                                elseif (!empty($project_beneficiaries_ip) && $i > 0):
+                                                    // แถวอื่นๆ ไม่แสดงอะไร เพื่อให้เป็น rowspan
+                                                    echo '';
+                                                else:
+                                                    // ใช้ข้อมูลจากฟอร์มถ้าไม่มีข้อมูลจากฐานข้อมูล
+                                                    echo isset($pathway_user[$i]) ? nl2br(htmlspecialchars($pathway_user[$i])) : '';
+                                                endif; ?>
                                             </td>
                                             <td style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
                                                 <?php echo isset($pathway_outcome[$i]) ? nl2br(htmlspecialchars($pathway_outcome[$i])) : ''; ?>
@@ -1844,7 +1896,7 @@ $form_data = [
                             // ถ้าไม่เจอ element ให้ใช้ PHP variables
                             const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
                             const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
-                            const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
+                            const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "N/A"; ?>';
 
                             // สร้าง form และ submit
                             const form = document.createElement('form');
@@ -2113,7 +2165,7 @@ $form_data = [
                             // ถ้าไม่เจอ element ให้ใช้ PHP variables
                             const npv = npvElement ? npvElement.getAttribute('data-sroi-npv') : '<?php echo $sroi_table_data["npv"] ?? "0"; ?>';
                             const sroiRatio = sroiElement ? sroiElement.getAttribute('data-sroi-ratio') : '<?php echo $sroi_table_data["sroi_ratio"] ?? "0"; ?>';
-                            const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "0"; ?>';
+                            const irr = irrElement ? irrElement.getAttribute('data-sroi-irr') : '<?php echo $sroi_table_data["irr"] ?? "N/A"; ?>';
 
                             // สร้าง form และ submit
                             const form = document.createElement('form');

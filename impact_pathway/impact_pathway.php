@@ -17,6 +17,12 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
 $message = '';
 $error = '';
 
+// ฟังก์ชันสำหรับ sanitize HTML ให้ปลอดภัยแต่อนุญาต tags พื้นฐาน
+function sanitizeHTML($html) {
+    $allowed_tags = '<p><br><strong><b><em><i><u><ol><ul><li><h1><h2><h3>';
+    return strip_tags($html, $allowed_tags);
+}
+
 // ดึงข้อมูล session ที่จำเป็น
 $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
@@ -861,6 +867,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        /* CKEditor Content Styling */
+        .ck-content ol {
+            list-style-type: decimal !important;
+            padding-left: 1.5rem !important;
+            margin: 1rem 0 !important;
+        }
+        
+        .ck-content ol li {
+            margin-bottom: 0.5rem !important;
+            padding-left: 0.25rem !important;
+        }
+        
+        .ck-content ol li::marker {
+            font-weight: normal !important;
+        }
+
+        /* Global ordered list styling for content display */
+        ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        ol li {
+            margin-bottom: 0.5rem;
+            padding-left: 0.25rem;
+        }
+        
+        ol li::marker {
+            font-weight: normal;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .main-container {
@@ -908,6 +946,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </style>
+    
+    <!-- CKEditor Rich Text Editor -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize CKEditor for Input Description
+            ClassicEditor
+                .create(document.querySelector('textarea[name="input_description"]'), {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'link', 'insertTable', '|',
+                        'undo', 'redo'
+                    ],
+                    heading: {
+                        options: [
+                            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' }
+                        ]
+                    }
+                })
+                .then(editor => {
+                    // Set editor height to approximately 5 rows
+                    editor.editing.view.change(writer => {
+                        writer.setStyle('height', '120px', editor.editing.view.document.getRoot());
+                    });
+                    
+                    editor.model.document.on('change:data', () => {
+                        document.querySelector('textarea[name="input_description"]').value = editor.getData();
+                    });
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+
+            // Initialize CKEditor for Impact Description
+            ClassicEditor
+                .create(document.querySelector('textarea[name="impact_description"]'), {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'link', 'insertTable', '|',
+                        'undo', 'redo'
+                    ],
+                    heading: {
+                        options: [
+                            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' }
+                        ]
+                    }
+                })
+                .then(editor => {
+                    // Set editor height to approximately 5 rows
+                    editor.editing.view.change(writer => {
+                        writer.setStyle('height', '120px', editor.editing.view.document.getRoot());
+                    });
+                    
+                    editor.model.document.on('change:data', () => {
+                        document.querySelector('textarea[name="impact_description"]').value = editor.getData();
+                    });
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        });
+    </script>
 </head>
 
 <body>
@@ -955,7 +1063,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <?php foreach ($existing_pathways as $pathway): ?>
                                                 <div class="input-item mb-2">
                                                     <div class="input-description">
-                                                        <?php echo htmlspecialchars($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?>
+                                                        <?php echo sanitizeHTML($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?>
                                                     </div>
                                                 </div>
                                             <?php endforeach; ?>
@@ -1008,29 +1116,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- ผู้ใช้ประโยชน์ - แสดงตามแต่ละแถว -->
-                                <td>
-                                    <?php
-                                    // แสดงผู้ใช้ประโยชน์แยกตามแต่ละกิจกรรม/แถว
-                                    // แต่ละแถวจะแสดงเฉพาะผู้ใช้ประโยชน์ที่เกี่ยวข้องกับลำดับของแถว
-                                    $activity_beneficiaries = [];
-                                    
-                                    // ให้แต่ละแถวแสดงผู้ใช้ประโยชน์ตามลำดับ
-                                    if (isset($project_beneficiaries[$activity_index])) {
-                                        $activity_beneficiaries[] = $project_beneficiaries[$activity_index];
-                                    }
-                                    ?>
-                                    <?php if (!empty($activity_beneficiaries)): ?>
-                                        <?php foreach ($activity_beneficiaries as $beneficiary): ?>
-                                            <div class="user-item">
-                                                <div class="user-info"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
-                                                <div class="user-detail"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <small class="text-muted">ไม่มีผู้ใช้ประโยชน์สำหรับแถวที่ <?php echo ($activity_index + 1); ?></small>
-                                    <?php endif; ?>
-                                </td>
+                                <!-- ผู้ใช้ประโยชน์ - แสดงเฉพาะแถวแรก -->
+                                <?php if ($activity_index == 0): ?>
+                                    <td rowspan="<?php echo count($project_activities); ?>">
+                                        <?php if (!empty($project_beneficiaries)): ?>
+                                            <?php foreach ($project_beneficiaries as $beneficiary): ?>
+                                                <div class="user-item">
+                                                    <div class="user-info"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
+                                                    <div class="user-detail"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
+                                                    <?php if (!empty($beneficiary['benefit_detail'])): ?>
+                                                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                                                            รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <small class="text-muted">ไม่มีข้อมูลผู้ใช้ประโยชน์</small>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endif; ?>
 
                                 <!-- ผลลัพธ์ - ดึงผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้ -->
                                 <td>
@@ -1072,7 +1177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <?php foreach ($existing_pathways as $pathway): ?>
                                                 <div class="impact-item mb-2">
                                                     <div class="impact-description">
-                                                        <?php echo htmlspecialchars($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?>
+                                                        <?php echo sanitizeHTML($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?>
                                                     </div>
                                                 </div>
                                             <?php endforeach; ?>
@@ -1125,11 +1230,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="row">
                                     <div class="col-md-6">
                                         <strong>📋 ปัจจัยนำเข้า:</strong><br>
-                                        <span class="text-muted"><?php echo htmlspecialchars($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?></span>
+                                        <span class="text-muted"><?php echo sanitizeHTML($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?></span>
                                     </div>
                                     <div class="col-md-6">
                                         <strong>💥 ผลกระทบ:</strong><br>
-                                        <span class="text-muted"><?php echo htmlspecialchars($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?></span>
+                                        <span class="text-muted"><?php echo sanitizeHTML($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?></span>
                                     </div>
                                 </div>
 

@@ -81,10 +81,26 @@ $form_data = [
 // ดึงข้อมูล Impact Pathway (ใช้โค้ดเดียวกันกับ report-sroi.php)
 $selected_project_id = $project_id;
 
-// ดึงข้อมูลปีจาก session หรือใช้ปีปัจจุบันเป็นค่าเริ่มต้น
-$available_years = $_SESSION['available_years'] ?? [
-    ['year_be' => date('Y') + 543]
-];
+// ดึงข้อมูลปีจาก session หรือดึงจากฐานข้อมูล
+$available_years = $_SESSION['available_years'] ?? [];
+
+// ถ้าไม่มีข้อมูลปีใน session ให้ดึงจากฐานข้อมูล
+if (empty($available_years)) {
+    $years_query = "SELECT year_be, year_display FROM years WHERE is_active = 1 ORDER BY sort_order ASC LIMIT 6";
+    $years_result = mysqli_query($conn, $years_query);
+    if ($years_result) {
+        while ($year_row = mysqli_fetch_assoc($years_result)) {
+            $available_years[] = $year_row;
+        }
+    }
+    
+    // ถ้าดึงจากฐานข้อมูลไม่ได้ให้ใช้ค่าเริ่มต้น
+    if (empty($available_years)) {
+        $available_years = [
+            ['year_be' => date('Y') + 543, 'year_display' => (date('Y') + 543)]
+        ];
+    }
+}
 
 // ดึงอัตราคิดลด
 $saved_discount_rate = 2.5;
@@ -105,7 +121,7 @@ $project_benefits = $_SESSION['project_benefits'] ?? [];
 $sroi_calculations = [
     'npv' => isset($_POST['npv']) ? floatval($_POST['npv']) : ($_SESSION['sroi_npv'] ?? 'N/A'),
     'sroi_ratio' => isset($_POST['sroi_ratio']) ? floatval($_POST['sroi_ratio']) : ($_SESSION['sroi_ratio'] ?? 'N/A'), 
-    'irr' => isset($_POST['irr']) ? floatval($_POST['irr']) : ($_SESSION['sroi_irr'] ?? 'N/A')
+    'irr' => isset($_POST['irr']) ? ($_POST['irr'] === 'N/A' ? 'N/A' : floatval($_POST['irr'])) : ($_SESSION['sroi_irr'] ?? 'N/A')
 ];
 
 // Debug: แสดงที่มาของข้อมูล
@@ -116,7 +132,8 @@ error_log("IRR from POST: " . ($_POST['irr'] ?? 'NOT SET'));
 
 // Debug: ตรวจสอบข้อมูลที่ดึงมาจาก session
 error_log("DEBUG export-pdf.php - project_benefits from session: " . print_r($project_benefits, true));
-error_log("DEBUG export-pdf.php - available_years from session: " . print_r($available_years, true));
+error_log("DEBUG export-pdf.php - available_years final: " . print_r($available_years, true));
+error_log("DEBUG export-pdf.php - available_years count: " . count($available_years));
 
 
 // ถ้าไม่มีข้อมูลใน session ให้ลองดึงโดยตรงจากฐานข้อมูล
