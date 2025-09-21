@@ -6,6 +6,60 @@ function sanitizeHTML($html) {
     $allowed_tags = '<p><br><strong><b><em><i><u><ol><ul><li><h1><h2><h3>';
     return strip_tags($html, $allowed_tags);
 }
+
+// ฟังก์ชันตัดคำภาษาไทยแบบง่าย
+function thaiWordWrap($text, $insertBreak = true) {
+    if (empty($text)) return $text;
+    
+    $break_char = $insertBreak ? '&#8203;' : ' '; // Zero-width space
+    
+    // คำที่มักมีปัญหาในการตัด - กำหนดจุดตัดที่ถูกต้อง
+    $word_breaks = [
+        'ผลกระทบทางสังคม' => 'ผลกระทบ' . $break_char . 'ทาง' . $break_char . 'สังคม',
+        'ผลกระทบทางเศรษฐกิจ' => 'ผลกระทบ' . $break_char . 'ทาง' . $break_char . 'เศรษฐกิจ',
+        'ผลกระทบสิ่งแวดล้อม' => 'ผลกระทบ' . $break_char . 'สิ่งแวดล้อม',
+        'ปัจจัยนำเข้า' => 'ปัจจัย' . $break_char . 'นำเข้า',
+        'ผู้ใช้ประโยชน์' => 'ผู้ใช้' . $break_char . 'ประโยชน์',
+        'การประเมินผล' => 'การประเมิน' . $break_char . 'ผล',
+        'ผลตอบแทนทางสังคม' => 'ผล' . $break_char . 'ตอบแทน' . $break_char . 'ทาง' . $break_char . 'สังคม',
+        'สำนักงานปลัดกระทรวง' => 'สำนักงาน' . $break_char . 'ปลัด' . $break_char . 'กระทรวง',
+        'หน่วยงานราชการ' => 'หน่วยงาน' . $break_char . 'ราชการ'
+    ];
+    
+    // แทนที่คำที่กำหนดไว้เป็นพิเศษ
+    foreach ($word_breaks as $original => $replacement) {
+        $text = str_replace($original, $replacement, $text);
+    }
+    
+    // รูปแบบการตัดคำภาษาไทยทั่วไป
+    $patterns = [
+        // หลังคำที่ลงท้ายด้วยสระ
+        '/([ก-๎]*[ะาิีึืุูเแโใไ])(?=[ก-๎])/u',
+        // หลังคำที่มีตัวสะกด
+        '/([ก-๎]*[กขคงจชซทธนปผพฟภมยรลวศษสหฬอฮ])(?=[ก-๎])/u',
+        // หลังคำสั้นๆ 2-3 ตัว
+        '/([ก-๎]{2,3})(?=[ก-๎]{3,})/u'
+    ];
+    
+    foreach ($patterns as $pattern) {
+        $text = preg_replace($pattern, '$1' . $break_char, $text);
+    }
+    
+    // คำทั่วไปที่ควรมีจุดตัด
+    $common_words = [
+        'โครงการ', 'กิจกรรม', 'ผลผลิต', 'ผลลัพธ์', 'การประเมิน', 'งบประมาณ', 
+        'องค์การ', 'หน่วยงาน', 'พื้นที่', 'ประชาชน', 'ชุมชน', 'ท้องถิ่น',
+        'รัฐบาล', 'กระทรวง', 'ภาครัฐ', 'ภาคเอกชน'
+    ];
+    
+    foreach ($common_words as $word) {
+        if (strlen($word) > 6) { // เฉพาะคำยาว
+            $text = str_replace($word, $word . $break_char, $text);
+        }
+    }
+    
+    return $text;
+}
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -21,6 +75,14 @@ function sanitizeHTML($html) {
             margin: 0;
             padding: 20px;
             color: #333;
+            /* Thai word breaking */
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            -webkit-hyphens: auto;
+            -moz-hyphens: auto;
+            -ms-hyphens: auto;
         }
 
         .header {
@@ -103,6 +165,11 @@ function sanitizeHTML($html) {
             padding: 8px;
             text-align: left;
             vertical-align: top;
+            /* Thai word breaking for table cells */
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
         }
 
         table th {
@@ -169,6 +236,30 @@ function sanitizeHTML($html) {
         ol li::marker {
             font-weight: normal;
         }
+
+        /* Thai text specific styling */
+        p, div, span, td, th, li {
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            /* สำหรับข้อความภาษาไทยที่ยาว */
+            line-break: auto;
+            white-space: normal;
+        }
+
+        /* สำหรับตารางที่มีข้อความยาว */
+        .large-table td {
+            max-width: 200px;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+
+        /* สำหรับข้อความในคอลัมน์แคบ */
+        .narrow-column {
+            max-width: 150px;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
     </style>
 </head>
 
@@ -177,18 +268,18 @@ function sanitizeHTML($html) {
     <div class="header">
         <h1>รายงานผลการประเมินผลตอบแทนทางสังคม</h1>
         <h2>Social Return On Investment : SROI</h2>
-        <p>โครงการ: <?php echo htmlspecialchars($project_name ?? ''); ?></p>
+        <p>โครงการ: <?php echo thaiWordWrap(htmlspecialchars($project_name ?? '')); ?></p>
     </div>
 
     <!-- ส่วนที่ 1: ข้อมูลทั่วไปของโครงการ -->
     <div class="section">
         <h3>ข้อมูลทั่วไปของโครงการ</h3>
         <p style="margin: 10px 0; line-height: 1.4; text-align: justify;">
-            โครงการ<?php echo htmlspecialchars($project_name ?? ''); ?>&nbsp;ดำเนินโครงการในพื้นที่
-            <?php echo htmlspecialchars($form_data['area_display'] ?? ''); ?>
+            โครงการ<?php echo thaiWordWrap(htmlspecialchars($project_name ?? '')); ?>&nbsp;ดำเนินโครงการในพื้นที่
+            <?php echo thaiWordWrap(htmlspecialchars($form_data['area_display'] ?? '')); ?>
             ได้รับการจัดสรรงบประมาณ <?php echo isset($selected_project['budget']) ? number_format($selected_project['budget'], 2) : ''; ?> บาท
-            ดำเนินการ&nbsp;<?php echo htmlspecialchars($form_data['activities_display'] ?? ''); ?>
-            ให้กับ&nbsp;<?php echo htmlspecialchars($form_data['target_group_display'] ?? ''); ?>
+            ดำเนินการ&nbsp;<?php echo thaiWordWrap(htmlspecialchars($form_data['activities_display'] ?? '')); ?>
+            ให้กับ&nbsp;<?php echo thaiWordWrap(htmlspecialchars($form_data['target_group_display'] ?? '')); ?>
         </p>
     </div>
 
@@ -396,11 +487,11 @@ function sanitizeHTML($html) {
                         // ดึงผู้ใช้ประโยชน์จากทั้งสองตาราง และจับคู่กับกิจกรรม
                         // จาก project_impact_ratios (Legacy system)
                         $legacy_beneficiaries_query = "
-                        SELECT DISTINCT pir.beneficiary, pir.benefit_number, pir.benefit_detail, 
+                        SELECT DISTINCT pir.beneficiary, pir.benefit_number, pir.benefit_detail, pir.chain_sequence,
                                NULL as activity_id, 'legacy' as source_type
                         FROM project_impact_ratios pir
                         WHERE pir.project_id = ? AND pir.beneficiary IS NOT NULL AND pir.beneficiary != ''
-                        ORDER BY pir.benefit_number ASC
+                        ORDER BY pir.chain_sequence ASC, pir.benefit_number ASC
                     ";
                         $legacy_stmt = mysqli_prepare($conn, $legacy_beneficiaries_query);
                         mysqli_stmt_bind_param($legacy_stmt, "i", $project_id);
@@ -439,7 +530,7 @@ function sanitizeHTML($html) {
                                     <td rowspan="<?php echo count($project_activities_ip); ?>" style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
                                         <?php if (!empty($existing_pathways_ip)): ?>
                                             <?php foreach ($existing_pathways_ip as $pathway): ?>
-                                                <?php echo sanitizeHTML($pathway['input_description'] ?: 'ไม่ได้ระบุ'); ?><br>
+                                                <?php echo thaiWordWrap(sanitizeHTML($pathway['input_description'] ?: 'ไม่ได้ระบุ')); ?><br>
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             ไม่มีข้อมูล
@@ -507,23 +598,30 @@ function sanitizeHTML($html) {
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- ผู้ใช้ประโยชน์ - แสดงทั้งหมดในแถวแรกเท่านั้น -->
-                                <?php if ($activity_index == 0): ?>
-                                    <td rowspan="<?php echo count($project_activities_ip); ?>" style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
-                                        <?php if (!empty($project_beneficiaries_ip)): ?>
-                                            <?php foreach ($project_beneficiaries_ip as $beneficiary): ?>
-                                                <strong><?php echo htmlspecialchars($beneficiary['benefit_number']); ?>.</strong><br>
-                                                <?php echo htmlspecialchars($beneficiary['beneficiary']); ?>
-                                                <?php if (!empty($beneficiary['benefit_detail'])): ?>
-                                                    <br><small>รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?></small>
-                                                <?php endif; ?>
-                                                <br><br>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            ไม่มีข้อมูลผู้ใช้ประโยชน์
-                                        <?php endif; ?>
-                                    </td>
-                                <?php endif; ?>
+                                <!-- ผู้ใช้ประโยชน์ - จับคู่ตาม chain_sequence -->
+                                <td style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
+                                    <?php 
+                                    // หาผู้ใช้ประโยชน์ที่ตรงกับ chain_sequence ของกิจกรรมปัจจุบัน
+                                    $current_beneficiary = null;
+                                    // หา chain_sequence ของกิจกรรมปัจจุบัน (ใช้ activity_index + 1 เพราะ activities เรียงตาม chain_sequence 1,2,3)
+                                    $current_chain_seq = $activity_index + 1;
+                                    
+                                    // หาผู้ใช้ประโยชน์ที่มี chain_sequence ตรงกัน
+                                    foreach ($project_beneficiaries_ip as $beneficiary) {
+                                        if ($beneficiary['chain_sequence'] == $current_chain_seq) {
+                                            $current_beneficiary = $beneficiary;
+                                            break;
+                                        }
+                                    }
+                                    ?>
+                                    
+                                    <?php if ($current_beneficiary): ?>
+                                        <strong><?php echo htmlspecialchars($current_beneficiary['benefit_number']); ?>.</strong><br>
+                                        <?php echo htmlspecialchars($current_beneficiary['beneficiary']); ?>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </td>
 
                                 <!-- ผลลัพธ์ -->
                                 <td style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
@@ -584,7 +682,7 @@ function sanitizeHTML($html) {
                                     <td rowspan="<?php echo count($project_activities_ip); ?>" style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
                                         <?php if (!empty($existing_pathways_ip)): ?>
                                             <?php foreach ($existing_pathways_ip as $pathway): ?>
-                                                <?php echo sanitizeHTML($pathway['impact_description'] ?: 'ไม่ได้ระบุ'); ?><br>
+                                                <?php echo thaiWordWrap(sanitizeHTML($pathway['impact_description'] ?: 'ไม่ได้ระบุ')); ?><br>
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             ไม่มีข้อมูล

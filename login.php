@@ -88,6 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button>
                     <a href="register.php" class="btn btn-success mt-2">สมัครใช้งานระบบ</a>
+                    <a href="forgot-password.php" class="btn btn-link mt-2">ลืมรหัสผ่าน?</a>
                 </div>
             </form>
         </div>

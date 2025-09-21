@@ -998,11 +998,11 @@ $form_data = [
                         // ดึงผู้ใช้ประโยชน์จากทั้งสองตาราง และจับคู่กับกิจกรรม
                         // จาก project_impact_ratios (Legacy system)
                         $legacy_beneficiaries_query = "
-                            SELECT DISTINCT pir.beneficiary, pir.benefit_number, pir.benefit_detail, 
+                            SELECT DISTINCT pir.beneficiary, pir.benefit_number, pir.benefit_detail, pir.chain_sequence,
                                    NULL as activity_id, 'legacy' as source_type
                             FROM project_impact_ratios pir
                             WHERE pir.project_id = ? AND pir.beneficiary IS NOT NULL AND pir.beneficiary != ''
-                            ORDER BY pir.benefit_number ASC
+                            ORDER BY pir.chain_sequence ASC, pir.benefit_number ASC
                         ";
                         $legacy_stmt = mysqli_prepare($conn, $legacy_beneficiaries_query);
                         mysqli_stmt_bind_param($legacy_stmt, "i", $selected_project_id);
@@ -1114,26 +1114,32 @@ $form_data = [
                                                 <?php endif; ?>
                                             </td>
 
-                                            <!-- ผู้ใช้ประโยชน์ - แสดงทั้งหมดในแถวแรกเท่านั้น -->
-                                            <?php if ($activity_index == 0): ?>
-                                                <td rowspan="<?php echo count($project_activities_ip); ?>" style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; vertical-align: top; font-size: 0.9rem;">
-                                                    <?php if (!empty($project_beneficiaries_ip)): ?>
-                                                        <?php foreach ($project_beneficiaries_ip as $beneficiary): ?>
-                                                            <div style="padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                                                                <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
-                                                                <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
-                                                                <?php if (!empty($beneficiary['benefit_detail'])): ?>
-                                                                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                                        รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        <?php endforeach; ?>
-                                                    <?php else: ?>
-                                                        <small style="color: #6c757d;">ไม่มีข้อมูลผู้ใช้ประโยชน์</small>
-                                                    <?php endif; ?>
-                                                </td>
-                                            <?php endif; ?>
+                                            <!-- ผู้ใช้ประโยชน์ - จับคู่ตาม chain_sequence -->
+                                            <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; vertical-align: top; font-size: 0.9rem;">
+                                                <?php 
+                                                // หาผู้ใช้ประโยชน์ที่ตรงกับ chain_sequence ของกิจกรรมปัจจุบัน
+                                                $current_beneficiary = null;
+                                                // หา chain_sequence ของกิจกรรมปัจจุบัน (ใช้ activity_index + 1 เพราะ activities เรียงตาม chain_sequence 1,2,3)
+                                                $current_chain_seq = $activity_index + 1;
+                                                
+                                                // หาผู้ใช้ประโยชน์ที่มี chain_sequence ตรงกัน
+                                                foreach ($project_beneficiaries_ip as $beneficiary) {
+                                                    if ($beneficiary['chain_sequence'] == $current_chain_seq) {
+                                                        $current_beneficiary = $beneficiary;
+                                                        break;
+                                                    }
+                                                }
+                                                ?>
+                                                
+                                                <?php if ($current_beneficiary): ?>
+                                                    <div style="padding: 0.5rem; font-size: 0.85rem;">
+                                                        <div style="font-weight: bold; color: #667eea;"><?php echo htmlspecialchars($current_beneficiary['benefit_number']); ?>.</div>
+                                                        <div style="color: #333; margin-top: 0.25rem;"><?php echo htmlspecialchars($current_beneficiary['beneficiary']); ?></div>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <small style="color: #6c757d;">-</small>
+                                                <?php endif; ?>
+                                            </td>
 
                                             <!-- ผลลัพธ์ - ดึงผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้ -->
                                             <td style="background-color: #fafafa; border: 2px solid #333; padding: 1rem; height: 80px; vertical-align: top; font-size: 0.9rem;">
@@ -1157,9 +1163,6 @@ $form_data = [
                                                                 $display_text = $outcome['project_outcome_details'];
                                                                 echo htmlspecialchars($display_text);
                                                                 ?>
-                                                            </div>
-                                                            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                                จากผลผลิต: <?php echo ($outcome_index + 1); ?>
                                                             </div>
                                                         </div>
                                                     <?php endforeach; ?>
@@ -1600,25 +1603,33 @@ $form_data = [
                                             </td>
                                             <td style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
                                                 <?php
-                                                // แสดงผู้ใช้ประโยชน์จากฐานข้อมูล ถ้ามี หรือจากฟอร์มถ้าไม่มี
-                                                if (!empty($project_beneficiaries_ip) && $i == 0):
-                                                    // แสดงทั้งหมดในแถวแรก
-                                                    foreach ($project_beneficiaries_ip as $beneficiary): ?>
-                                                        <div style="margin-bottom: 8px;">
-                                                            <strong><?php echo htmlspecialchars($beneficiary['benefit_number']); ?>.</strong>
-                                                            <?php echo htmlspecialchars($beneficiary['beneficiary']); ?>
-                                                            <?php if (!empty($beneficiary['benefit_detail'])): ?>
-                                                                <br><small style="color: #666;"><?php echo htmlspecialchars($beneficiary['benefit_detail']); ?></small>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                <?php endforeach;
-                                                elseif (!empty($project_beneficiaries_ip) && $i > 0):
-                                                    // แถวอื่นๆ ไม่แสดงอะไร เพื่อให้เป็น rowspan
-                                                    echo '';
-                                                else:
-                                                    // ใช้ข้อมูลจากฟอร์มถ้าไม่มีข้อมูลจากฐานข้อมูล
-                                                    echo isset($pathway_user[$i]) ? nl2br(htmlspecialchars($pathway_user[$i])) : '';
-                                                endif; ?>
+                                                // หาผู้ใช้ประโยชน์ที่ตรงกับ chain_sequence ของแถวปัจจุบัน
+                                                $current_beneficiary = null;
+                                                $current_chain_seq = $i + 1; // เนื่องจาก $i เริ่มจาก 0
+                                                
+                                                // หาผู้ใช้ประโยชน์ที่มี chain_sequence ตรงกัน
+                                                if (!empty($project_beneficiaries_ip)) {
+                                                    foreach ($project_beneficiaries_ip as $beneficiary) {
+                                                        if ($beneficiary['chain_sequence'] == $current_chain_seq) {
+                                                            $current_beneficiary = $beneficiary;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                if ($current_beneficiary): ?>
+                                                    <div style="margin-bottom: 8px;">
+                                                        <strong><?php echo htmlspecialchars($current_beneficiary['benefit_number']); ?>.</strong>
+                                                        <?php echo htmlspecialchars($current_beneficiary['beneficiary']); ?>
+                                                        <?php if (!empty($current_beneficiary['benefit_detail'])): ?>
+                                                            <br><small style="color: #666;"><?php echo htmlspecialchars($current_beneficiary['benefit_detail']); ?></small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php elseif (isset($pathway_user[$i])): ?>
+                                                    <?php echo nl2br(htmlspecialchars($pathway_user[$i])); ?>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
                                             </td>
                                             <td style="border: 1px solid #333; padding: 6px; vertical-align: top; font-size: 10px;">
                                                 <?php echo isset($pathway_outcome[$i]) ? nl2br(htmlspecialchars($pathway_outcome[$i])) : ''; ?>

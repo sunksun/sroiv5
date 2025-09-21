@@ -18,7 +18,8 @@ $message = '';
 $error = '';
 
 // ฟังก์ชันสำหรับ sanitize HTML ให้ปลอดภัยแต่อนุญาต tags พื้นฐาน
-function sanitizeHTML($html) {
+function sanitizeHTML($html)
+{
     $allowed_tags = '<p><br><strong><b><em><i><u><ol><ul><li><h1><h2><h3>';
     return strip_tags($html, $allowed_tags);
 }
@@ -259,14 +260,15 @@ if ($project_id > 0) {
     mysqli_stmt_close($outcomes_stmt_new);
 
     // ดึงผู้ใช้ประโยชน์จากทั้งสองตาราง และจับคู่กับกิจกรรม
+$project_beneficiaries = []; // เริ่มต้นตัวแปร
 
     // จาก project_impact_ratios (Legacy system)
     $legacy_beneficiaries_query = "
-        SELECT DISTINCT pir.beneficiary, pir.benefit_number, pir.benefit_detail, 
+        SELECT DISTINCT pir.beneficiary, pir.benefit_number, pir.benefit_detail, pir.chain_sequence,
                NULL as activity_id, 'legacy' as source_type
         FROM project_impact_ratios pir
         WHERE pir.project_id = ? AND pir.beneficiary IS NOT NULL AND pir.beneficiary != ''
-        ORDER BY pir.benefit_number ASC
+        ORDER BY pir.chain_sequence ASC, pir.benefit_number ASC
     ";
     $legacy_stmt = mysqli_prepare($conn, $legacy_beneficiaries_query);
     mysqli_stmt_bind_param($legacy_stmt, "i", $project_id);
@@ -873,12 +875,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding-left: 1.5rem !important;
             margin: 1rem 0 !important;
         }
-        
+
         .ck-content ol li {
             margin-bottom: 0.5rem !important;
             padding-left: 0.25rem !important;
         }
-        
+
         .ck-content ol li::marker {
             font-weight: normal !important;
         }
@@ -889,12 +891,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding-left: 1.5rem;
             margin: 1rem 0;
         }
-        
+
         ol li {
             margin-bottom: 0.5rem;
             padding-left: 0.25rem;
         }
-        
+
         ol li::marker {
             font-weight: normal;
         }
@@ -946,7 +948,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </style>
-    
+
     <!-- CKEditor Rich Text Editor -->
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <script>
@@ -962,10 +964,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'undo', 'redo'
                     ],
                     heading: {
-                        options: [
-                            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' }
+                        options: [{
+                                model: 'paragraph',
+                                title: 'Paragraph',
+                                class: 'ck-heading_paragraph'
+                            },
+                            {
+                                model: 'heading1',
+                                view: 'h1',
+                                title: 'Heading 1',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
+                                view: 'h2',
+                                title: 'Heading 2',
+                                class: 'ck-heading_heading2'
+                            }
                         ]
                     }
                 })
@@ -974,7 +989,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     editor.editing.view.change(writer => {
                         writer.setStyle('height', '120px', editor.editing.view.document.getRoot());
                     });
-                    
+
                     editor.model.document.on('change:data', () => {
                         document.querySelector('textarea[name="input_description"]').value = editor.getData();
                     });
@@ -994,10 +1009,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'undo', 'redo'
                     ],
                     heading: {
-                        options: [
-                            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' }
+                        options: [{
+                                model: 'paragraph',
+                                title: 'Paragraph',
+                                class: 'ck-heading_paragraph'
+                            },
+                            {
+                                model: 'heading1',
+                                view: 'h1',
+                                title: 'Heading 1',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
+                                view: 'h2',
+                                title: 'Heading 2',
+                                class: 'ck-heading_heading2'
+                            }
                         ]
                     }
                 })
@@ -1006,7 +1034,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     editor.editing.view.change(writer => {
                         writer.setStyle('height', '120px', editor.editing.view.document.getRoot());
                     });
-                    
+
                     editor.model.document.on('change:data', () => {
                         document.querySelector('textarea[name="impact_description"]').value = editor.getData();
                     });
@@ -1053,12 +1081,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($project_activities)): ?>
-                        <?php foreach ($project_activities as $activity_index => $activity): ?>
+                    <?php 
+                    // คำนวณจำนวนแถวที่ต้องการ - เอาค่าสูงสุดระหว่าง จำนวนกิจกรรม และ จำนวนผู้ใช้ประโยชน์
+                    $max_rows = max(count($project_activities), count($project_beneficiaries));
+                    if ($max_rows == 0) $max_rows = 1; // อย่างน้อย 1 แถว
+                    ?>
+                    
+                    <?php if (!empty($project_activities) || !empty($project_beneficiaries)): ?>
+                        <?php for ($row_index = 0; $row_index < $max_rows; $row_index++): ?>
                             <tr>
                                 <!-- ปัจจัยนำเข้า - แสดงเฉพาะแถวแรก -->
-                                <?php if ($activity_index == 0): ?>
-                                    <td rowspan="<?php echo count($project_activities); ?>">
+                                <?php if ($row_index == 0): ?>
+                                    <td rowspan="<?php echo $max_rows; ?>">
                                         <?php if (!empty($existing_pathways)): ?>
                                             <?php foreach ($existing_pathways as $pathway): ?>
                                                 <div class="input-item mb-2">
@@ -1073,106 +1107,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </td>
                                 <?php endif; ?>
 
-                                <!-- กิจกรรม - แสดงแต่ละกิจกรรมในแถวต่างกัน -->
+                                <!-- กิจกรรม -->
                                 <td>
-                                    <div class="activity-item">
-                                        <div class="activity-code"><strong><?php echo ($activity_index + 1); ?></strong>.</div>
-                                        <div class="activity-name"><?php echo htmlspecialchars($activity['activity_name']); ?></div>
-                                        <?php if (!empty($activity['activity_description'])): ?>
-                                            <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                <?php echo htmlspecialchars($activity['activity_description']); ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </td>
-
-                                <!-- ผลผลิต - ดึงผลผลิตที่เกี่ยวข้องกับกิจกรรมนี้ -->
-                                <td>
-                                    <?php
-                                    // ค้นหาผลผลิตที่เกี่ยวข้องกับกิจกรรมนี้โดยตรง
-                                    $activity_outputs = [];
-                                    foreach ($project_outputs as $output) {
-                                        // ตรวจสอบว่าผลผลิตนี้มาจากกิจกรรมที่กำลังแสดง
-                                        if ($output['activity_id'] == $activity['activity_id']) {
-                                            $activity_outputs[] = $output;
-                                        }
-                                    }
-                                    ?>
-                                    <?php if (!empty($activity_outputs)): ?>
-                                        <?php foreach ($activity_outputs as $output_index => $output): ?>
-                                            <div class="output-item">
-                                                <div class="output-sequence"><strong><?php echo ($output_index + 1); ?></strong>.</div>
-                                                <div class="output-description">
-                                                    <?php echo htmlspecialchars(
-                                                        !empty($output['project_output_details'])
-                                                            ? $output['project_output_details']
-                                                            : $output['output_description']
-                                                    ); ?>
+                                    <?php if (isset($project_activities[$row_index])): ?>
+                                        <?php $activity = $project_activities[$row_index]; ?>
+                                        <div class="activity-item">
+                                            <div class="activity-code"><strong><?php echo ($row_index + 1); ?></strong>.</div>
+                                            <div class="activity-name"><?php echo htmlspecialchars($activity['activity_name']); ?></div>
+                                            <?php if (!empty($activity['activity_description'])): ?>
+                                                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
+                                                    <?php echo htmlspecialchars($activity['activity_description']); ?>
                                                 </div>
-                                            </div>
-                                        <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
                                     <?php else: ?>
-                                        <small class="text-muted">ไม่มีผลผลิตสำหรับกิจกรรม <?php echo ($activity_index + 1); ?></small>
+                                        <small class="text-muted">-</small>
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- ผู้ใช้ประโยชน์ - แสดงเฉพาะแถวแรก -->
-                                <?php if ($activity_index == 0): ?>
-                                    <td rowspan="<?php echo count($project_activities); ?>">
-                                        <?php if (!empty($project_beneficiaries)): ?>
-                                            <?php foreach ($project_beneficiaries as $beneficiary): ?>
-                                                <div class="user-item">
-                                                    <div class="user-info"><?php echo htmlspecialchars($beneficiary['benefit_number']); ?></div>
-                                                    <div class="user-detail"><?php echo htmlspecialchars($beneficiary['beneficiary']); ?></div>
-                                                    <?php if (!empty($beneficiary['benefit_detail'])): ?>
-                                                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                            รายละเอียด: <?php echo htmlspecialchars($beneficiary['benefit_detail']); ?>
-                                                        </div>
-                                                    <?php endif; ?>
+                                <!-- ผลผลิต -->
+                                <td>
+                                    <?php if (isset($project_activities[$row_index])): ?>
+                                        <?php 
+                                        $activity = $project_activities[$row_index];
+                                        // ค้นหาผลผลิตที่เกี่ยวข้องกับกิจกรรมนี้โดยตรง
+                                        $activity_outputs = [];
+                                        foreach ($project_outputs as $output) {
+                                            // ตรวจสอบว่าผลผลิตนี้มาจากกิจกรรมที่กำลังแสดง
+                                            if ($output['activity_id'] == $activity['activity_id']) {
+                                                $activity_outputs[] = $output;
+                                            }
+                                        }
+                                        ?>
+                                        <?php if (!empty($activity_outputs)): ?>
+                                            <?php foreach ($activity_outputs as $output_index => $output): ?>
+                                                <div class="output-item">
+                                                    <div class="output-sequence"><strong><?php echo ($output_index + 1); ?></strong>.</div>
+                                                    <div class="output-description">
+                                                        <?php echo htmlspecialchars(
+                                                            !empty($output['project_output_details'])
+                                                                ? $output['project_output_details']
+                                                                : $output['output_description']
+                                                        ); ?>
+                                                    </div>
                                                 </div>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <small class="text-muted">ไม่มีข้อมูลผู้ใช้ประโยชน์</small>
+                                            <small class="text-muted">ไม่มีผลผลิตสำหรับกิจกรรม <?php echo ($row_index + 1); ?></small>
                                         <?php endif; ?>
-                                    </td>
-                                <?php endif; ?>
+                                    <?php else: ?>
+                                        <small class="text-muted">-</small>
+                                    <?php endif; ?>
+                                </td>
 
-                                <!-- ผลลัพธ์ - ดึงผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้ -->
+                                <!-- ผู้ใช้ประโยชน์ - จับคู่ตาม chain_sequence -->
                                 <td>
-                                    <?php
-                                    // ค้นหาผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้โดยตรง
-                                    $activity_outcomes = [];
-                                    foreach ($project_outcomes as $outcome) {
-                                        // ตรวจสอบว่าผลลัพธ์นี้มาจากกิจกรรมที่กำลังแสดง
-                                        if ($outcome['activity_id'] == $activity['activity_id']) {
-                                            $activity_outcomes[] = $outcome;
+                                    <?php 
+                                    // หาผู้ใช้ประโยชน์ที่ตรงกับ chain_sequence ของกิจกรรมปัจจุบัน
+                                    $current_beneficiary = null;
+                                    if (isset($project_activities[$row_index])) {
+                                        // หา chain_sequence ของกิจกรรมปัจจุบัน (ใช้ row_index + 1 เพราะ activities เรียงตาม chain_sequence 1,2,3)
+                                        $current_chain_seq = $row_index + 1;
+                                        
+                                        // หาผู้ใช้ประโยชน์ที่มี chain_sequence ตรงกัน
+                                        foreach ($project_beneficiaries as $beneficiary) {
+                                            if ($beneficiary['chain_sequence'] == $current_chain_seq) {
+                                                $current_beneficiary = $beneficiary;
+                                                break;
+                                            }
                                         }
                                     }
                                     ?>
-                                    <?php if (!empty($activity_outcomes)): ?>
-                                        <?php foreach ($activity_outcomes as $outcome_index => $outcome): ?>
-                                            <div class="outcome-item">
-                                                <div class="outcome-sequence"><strong><?php echo ($outcome_index + 1); ?></strong>.</div>
-                                                <div class="outcome-description">
-                                                    <?php
-                                                    // ใช้ข้อมูลจาก project_outcome_details เท่านั้น
-                                                    $display_text = $outcome['project_outcome_details'];
-                                                    echo htmlspecialchars($display_text);
-                                                    ?>
-                                                </div>
-                                                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">
-                                                    จากผลผลิต: <?php echo ($outcome_index + 1); ?>
-                                                </div>
-                                            </div>
-                                        <?php endforeach; ?>
+                                    
+                                    <?php if ($current_beneficiary): ?>
+                                        <div class="user-item">
+                                            <div class="user-info"><?php echo htmlspecialchars($current_beneficiary['benefit_number']); ?>.</div>
+                                            <div class="user-detail"><?php echo htmlspecialchars($current_beneficiary['beneficiary']); ?></div>
+                                        </div>
                                     <?php else: ?>
-                                        <small class="text-muted">ไม่มีผลลัพธ์สำหรับกิจกรรม <?php echo ($activity_index + 1); ?></small>
+                                        <small class="text-muted">-</small>
+                                    <?php endif; ?>
+                                </td>
+
+                                <!-- ผลลัพธ์ - ดึงผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้ -->
+                                <td>
+                                    <?php if (isset($project_activities[$row_index])): ?>
+                                        <?php 
+                                        $activity = $project_activities[$row_index];
+                                        // ค้นหาผลลัพธ์ที่เกี่ยวข้องกับกิจกรรมนี้โดยตรง
+                                        $activity_outcomes = [];
+                                        foreach ($project_outcomes as $outcome) {
+                                            // ตรวจสอบว่าผลลัพธ์นี้มาจากกิจกรรมที่กำลังแสดง
+                                            if ($outcome['activity_id'] == $activity['activity_id']) {
+                                                $activity_outcomes[] = $outcome;
+                                            }
+                                        }
+                                        ?>
+                                        <?php if (!empty($activity_outcomes)): ?>
+                                            <?php foreach ($activity_outcomes as $outcome_index => $outcome): ?>
+                                                <div class="outcome-item">
+                                                    <div class="outcome-sequence"><strong><?php echo ($outcome_index + 1); ?></strong>.</div>
+                                                    <div class="outcome-description">
+                                                        <?php
+                                                        // ใช้ข้อมูลจาก project_outcome_details เท่านั้น
+                                                        $display_text = $outcome['project_outcome_details'];
+                                                        echo htmlspecialchars($display_text);
+                                                        ?>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <small class="text-muted">ไม่มีผลลัพธ์สำหรับกิจกรรม <?php echo ($row_index + 1); ?></small>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <small class="text-muted">-</small>
                                     <?php endif; ?>
                                 </td>
 
                                 <!-- ผลกระทบ - แสดงเฉพาะแถวแรก -->
-                                <?php if ($activity_index == 0): ?>
-                                    <td rowspan="<?php echo count($project_activities); ?>">
+                                <?php if ($row_index == 0): ?>
+                                    <td rowspan="<?php echo $max_rows; ?>">
                                         <?php if (!empty($existing_pathways)): ?>
                                             <?php foreach ($existing_pathways as $pathway): ?>
                                                 <div class="impact-item mb-2">
@@ -1187,7 +1241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </td>
                                 <?php endif; ?>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endfor; ?>
                     <?php else: ?>
                         <tr>
                             <td colspan="6" class="text-center text-muted">
@@ -1341,7 +1395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             📊 ถัดไป → กำหนดต้นทุน
                         </button>
                     </form>
-                    
+
                     <!-- เพิ่มข้อมูลใหม่ -->
                     <a href="impact_pathway.php?project_id=<?php echo $project_id; ?>&add_new=1" class="btn btn-success" style="margin-left: 10px; display: none;">
                         ➕ เพิ่มข้อมูลใหม่
@@ -1355,7 +1409,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($project_id && !empty($existing_pathways)) {
             // ใช้ฟังก์ชันเดียวกันกับ sroi-expost/index.php
             require_once '../sroi-expost/includes/functions.php';
-            
+
             // ดึงข้อมูลจากฐานข้อมูล
             $available_years = [];
             $yearly_query = "SELECT DISTINCT year FROM project_impact_ratios WHERE project_id = ? ORDER BY year";
@@ -1363,7 +1417,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_bind_param($yearly_stmt, "i", $project_id);
             mysqli_stmt_execute($yearly_stmt);
             $yearly_result = mysqli_stmt_get_result($yearly_stmt);
-            
+
             while ($year_row = mysqli_fetch_assoc($yearly_result)) {
                 $year_be = $year_row['year'];
                 $available_years[] = [
@@ -1372,14 +1426,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
             }
             mysqli_stmt_close($yearly_stmt);
-            
+
             if (!empty($available_years)) {
                 // คำนวณค่าต่างๆ เหมือนกับ sroi-expost/index.php
                 $discount_rate = 0.03;
                 $present_benefits_by_year = [];
                 $present_costs_by_year = [];
                 $base_case_impact = 0;
-                
+
                 foreach ($available_years as $year_index => $year) {
                     // ดึงข้อมูลต้นทุนและผลประโยชน์
                     $cost_query = "SELECT SUM(total_cost) as total FROM project_costs WHERE project_id = ? AND cost_year = ?";
@@ -1390,7 +1444,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $cost_data = mysqli_fetch_assoc($cost_result);
                     $total_cost = $cost_data['total'] ?: 0;
                     mysqli_stmt_close($cost_stmt);
-                    
+
                     // ดึงข้อมูลผลประโยชน์
                     $benefit_query = "SELECT SUM(benefit_note) as total FROM project_impact_ratios WHERE project_id = ? AND year = ?";
                     $benefit_stmt = mysqli_prepare($conn, $benefit_query);
@@ -1400,19 +1454,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $benefit_data = mysqli_fetch_assoc($benefit_result);
                     $total_benefit = $benefit_data['total'] ?: 0;
                     mysqli_stmt_close($benefit_stmt);
-                    
+
                     // คำนวณ Present Value
                     $discount_factor = 1 / pow((1 + $discount_rate), $year_index);
                     $present_costs_by_year[$year['year_be']] = $total_cost * $discount_factor;
                     $present_benefits_by_year[$year['year_be']] = $total_benefit * $discount_factor;
-                    
+
                     // คำนวณ Base Case Impact
                     $impact_query = "SELECT attribution, deadweight, displacement, benefit_note FROM project_impact_ratios WHERE project_id = ? AND year = ?";
                     $impact_stmt = mysqli_prepare($conn, $impact_query);
                     mysqli_stmt_bind_param($impact_stmt, "is", $project_id, $year['year_be']);
                     mysqli_stmt_execute($impact_stmt);
                     $impact_result = mysqli_stmt_get_result($impact_stmt);
-                    
+
                     while ($impact_row = mysqli_fetch_assoc($impact_result)) {
                         $benefit_amount = $impact_row['benefit_note'] ?: 0;
                         $attribution = $benefit_amount * ($impact_row['attribution'] / 100);
@@ -1423,30 +1477,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     mysqli_stmt_close($impact_stmt);
                 }
-                
+
                 $total_present_costs = array_sum($present_costs_by_year);
                 $total_present_benefits = array_sum($present_benefits_by_year);
                 $net_social_benefit = $total_present_benefits - $base_case_impact;
-                
+
                 // คำนวณ NPV
                 $npv = $net_social_benefit - $total_present_costs;
-                
+
                 // คำนวณ SROI
                 $sroi_ratio = ($total_present_costs > 0) ? ($net_social_benefit / $total_present_costs) : 0;
-                
+
                 // คำนวณ IRR (แบบง่าย)
                 $cash_flows = [];
                 foreach ($available_years as $year_index => $year) {
                     $present_benefit = $present_benefits_by_year[$year['year_be']] ?? 0;
                     $present_cost = $present_costs_by_year[$year['year_be']] ?? 0;
                     $year_present_base_case = 0;
-                    
+
                     $impact_query = "SELECT attribution, deadweight, displacement, benefit_note FROM project_impact_ratios WHERE project_id = ? AND year = ?";
                     $impact_stmt = mysqli_prepare($conn, $impact_query);
                     mysqli_stmt_bind_param($impact_stmt, "is", $project_id, $year['year_be']);
                     mysqli_stmt_execute($impact_stmt);
                     $impact_result = mysqli_stmt_get_result($impact_stmt);
-                    
+
                     while ($impact_row = mysqli_fetch_assoc($impact_result)) {
                         $benefit_amount = $impact_row['benefit_note'] ?: 0;
                         $attribution = $benefit_amount * ($impact_row['attribution'] / 100);
@@ -1456,66 +1510,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $year_present_base_case += $impact_amount;
                     }
                     mysqli_stmt_close($impact_stmt);
-                    
+
                     $net_cash_flow = ($present_benefit - $year_present_base_case) - $present_cost;
                     $cash_flows[] = $net_cash_flow;
                 }
-                
+
                 $calculated_irr = calculateIRR($cash_flows);
                 $irr = ($calculated_irr !== null) ? number_format($calculated_irr * 100, 2) . '%' : 'N/A';
-                
+
                 // ฟังก์ชันสำหรับ format ตัวเลข
-                function formatNumber($number, $decimals = 0) {
+                function formatNumber($number, $decimals = 0)
+                {
                     return number_format($number, $decimals, '.', ',');
                 }
         ?>
 
-        <!-- NPV, SROI, IRR Summary Section -->
-        <div style="margin: 2rem 0; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">📊 สรุปผลการวิเคราะห์ทางการเงิน</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
-                    <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
-                        NPV (Net Present Value)<br>
-                        <small>มูลค่าปัจจุบันสุทธิ (บาท)</small>
-                    </div>
-                    <div style="font-size: 2rem; font-weight: bold;">
-                        <?php echo formatNumber($npv, 2); ?>
-                    </div>
-                    <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
-                        <?php echo $npv >= 0 ? '✅ โครงการมีความคุ้มค่า' : '❌ โครงการไม่คุ้มค่า'; ?>
+                <!-- NPV, SROI, IRR Summary Section -->
+                <div style="margin: 2rem 0; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">📊 สรุปผลการวิเคราะห์ทางการเงิน</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
+                                NPV (Net Present Value)<br>
+                                <small>มูลค่าปัจจุบันสุทธิ (บาท)</small>
+                            </div>
+                            <div style="font-size: 2rem; font-weight: bold;">
+                                <?php echo formatNumber($npv, 2); ?>
+                            </div>
+                            <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
+                                <?php echo $npv >= 0 ? '✅ โครงการมีความคุ้มค่า' : '❌ โครงการไม่คุ้มค่า'; ?>
+                            </div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
+                                SROI Ratio<br>
+                                <small>อัตราผลตอบแทนทางสังคม (เท่า)</small>
+                            </div>
+                            <div style="font-size: 2rem; font-weight: bold;">
+                                <?php echo formatNumber($sroi_ratio, 2); ?>
+                            </div>
+                            <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
+                                <?php echo $sroi_ratio >= 1 ? '✅ สร้างผลประโยชน์คุ้มค่า' : '❌ ไม่คุ้มค่าการลงทุน'; ?>
+                            </div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
+                                IRR (Internal Rate of Return)<br>
+                                <small>อัตราผลตอบแทนภายใน</small>
+                            </div>
+                            <div style="font-size: 2rem; font-weight: bold;">
+                                <?php echo $irr; ?>
+                            </div>
+                            <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
+                                <?php echo $irr !== 'N/A' && $calculated_irr > 0.03 ? '✅ สูงกว่าอัตราคิดลด 3%' : '❌ ต่ำกว่าอัตราคิดลด'; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
-                    <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
-                        SROI Ratio<br>
-                        <small>อัตราผลตอบแทนทางสังคม (เท่า)</small>
-                    </div>
-                    <div style="font-size: 2rem; font-weight: bold;">
-                        <?php echo formatNumber($sroi_ratio, 2); ?>
-                    </div>
-                    <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
-                        <?php echo $sroi_ratio >= 1 ? '✅ สร้างผลประโยชน์คุ้มค่า' : '❌ ไม่คุ้มค่าการลงทุน'; ?>
-                    </div>
-                </div>
-
-                <div style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
-                    <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 8px;">
-                        IRR (Internal Rate of Return)<br>
-                        <small>อัตราผลตอบแทนภายใน</small>
-                    </div>
-                    <div style="font-size: 2rem; font-weight: bold;">
-                        <?php echo $irr; ?>
-                    </div>
-                    <div style="font-size: 0.9rem; margin-top: 8px; opacity: 0.8;">
-                        <?php echo $irr !== 'N/A' && $calculated_irr > 0.03 ? '✅ สูงกว่าอัตราคิดลด 3%' : '❌ ต่ำกว่าอัตราคิดลด'; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <?php 
+        <?php
             } // end if (!empty($available_years))
         } // end if ($project_id && !empty($existing_pathways))
         ?>
@@ -1560,10 +1615,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             <?php if (isset($_GET['saved']) && $_GET['saved'] == '1'): ?>
-            // แสดงข้อความเมื่อบันทึกสำเร็จ
-            setTimeout(function() {
-                alert('บันทึกข้อมูล Impact Pathway สำเร็จแล้ว! ตอนนี้สามารถกดปุ่ม "ถัดไป" เพื่อไปขั้นตอนต่อไปได้');
-            }, 500);
+                // แสดงข้อความเมื่อบันทึกสำเร็จ
+                setTimeout(function() {
+                    alert('บันทึกข้อมูล Impact Pathway สำเร็จแล้ว! ตอนนี้สามารถกดปุ่ม "ถัดไป" เพื่อไปขั้นตอนต่อไปได้');
+                }, 500);
             <?php endif; ?>
 
             console.log('🔗 Enhanced Social Impact Pathway Form with Activities and Outputs data loaded successfully!');

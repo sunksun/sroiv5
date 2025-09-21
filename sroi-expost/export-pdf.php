@@ -153,7 +153,7 @@ try {
         mkdir($temp_dir, 0777, true);
     }
     
-    // สร้าง mPDF instance
+    // สร้าง mPDF instance พร้อมการรองรับภาษาไทย
     $mpdf = new \Mpdf\Mpdf([
         'mode' => 'utf-8',
         'format' => 'A4',
@@ -167,7 +167,12 @@ try {
         'margin_footer' => 10,
         'tempDir' => $temp_dir,
         'autoScriptToLang' => true,
-        'autoLangToFont' => true
+        'autoLangToFont' => true,
+        // ปรับปรุงการรองรับภาษาไทย
+        'useSubstitutions' => true,
+        'simpleTables' => false,
+        'packTableData' => true,
+        'justifyB4br' => true
     ]);
     
     error_log("DEBUG: mPDF instance created successfully");
